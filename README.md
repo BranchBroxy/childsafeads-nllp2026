@@ -236,33 +236,39 @@ as a transfer check, never as a selection criterion. Submission 1 reaches **0.76
 
 ## 7 · What it costs to run
 
-The question an operator asks is what **one segment** costs. We timed one pass of each
-branch type and divided by the instances it covered.
+The question an operator asks is what **one segment** costs. Each subtask runs nine
+voters — three branches of three fold-models — so its cost is the sum of what those
+branches charge per segment.
 
-| Branch | one segment, one subtask |
+| Submission | ST1 | ST2 | ST3 | all 3,360 instances |
+|---|---|---|---|---|
+| **1** | **4.4 s** | **4.4 s** | **4.4 s** | **12.4 GPU-h** |
+| 2 | — | — | — | — |
+| 3 | — | — | — | — |
+| 4 | — | — | — | — |
+| 5 | — | — | — | — |
+
+*Subtask columns are seconds per segment; the last column is the whole corpus, which is what
+the submission form asks for.*
+
+The per-pass figures behind those sums, measured once per branch type:
+
+| Branch | one segment, one pass |
 |---|---|
 | **G** — Phi-4, decodes the label as text | **1.01 s** |
 | **S** — ettin-1b, one encoder forward | 0.29 s |
 | **MCS** — Phi-4 frozen, one forward + logistic regression | 0.19 s |
 
-Decoding is what costs: the generative branch is five times a frozen forward on the same
+Decoding is what costs. The generative branch is five times a frozen forward on the *same*
 backbone and three times a full encoder pass, though the encoder is fine-tuned and the
-frozen decoder fourteen times its size. Model size predicts none of this; the
-autoregressive loop does.
-
-A branch runs three fold-models, a subtask runs three branches, and the system runs three
-subtasks — 27 passes on two loaded backbones.
-
-| Submission | per segment | all 3,360 |
-|---|---|---|
-| 1 | **13.3 s** | 12.4 GPU-h |
-| 2 | *pending* | |
-| 3–5 | | |
+frozen decoder is fourteen times its size. Model size predicts none of this; the
+autoregressive loop does. An operator who wants this cheaper should replace the generative
+branch, not the large model.
 
 Throughput from batched runs on single A100-SXM4 and H200 cards, model loading amortised
-over the pass. A cold start on one segment is dominated by loading the two backbones
-(minutes), and a warm system handling one segment at a time loses the batching advantage —
-13 seconds is a floor, not a promise. Inference only; training the grid cost far more.
+over the pass; a cold start on one segment is dominated by loading the two backbones. In
+submission 1 the ST1 minority branch reads L1 rather than L1234, so that column is a slight
+overestimate. Inference only — training the grid cost far more.
 
 ---
 

@@ -101,9 +101,10 @@ page).*
 ## 3 · From cross-validation to a branch
 
 Every configuration is trained **five times**. The training split is cut into five folds
-**grouped by channel** — sponsored segments from one creator share vocabulary, product mix
-and disclosure habits, so a random split leaks all of it. Each run trains on four folds and
-is scored on the fifth, which it never saw and which names it.
+**f0–f4**, grouped by channel — sponsored segments from one creator share vocabulary,
+product mix and disclosure habits, so a random split leaks all of it. Each run produces one
+model **M0–M4**: **M**$_i$ trains on the four folds other than **f**$_i$ and is scored on
+**f**$_i$, which it never saw and which is what names it.
 
 A **voter** is one such fold-model, and its score on its own held-out fold is its
 $F1_{cv}$ — the only honest number we have for it, since nothing else it was trained on can

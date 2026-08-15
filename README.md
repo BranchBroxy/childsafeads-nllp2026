@@ -100,25 +100,15 @@ page).*
 
 ## 3 · From cross-validation to a branch
 
-Each configuration from the grid — one model, one method, one scope — is not trained once
-but **five times**. The training split is cut into five folds **grouped by channel**, with
-an assertion that no channel appears in two folds. That grouping is not a formality:
-sponsored segments from one creator share vocabulary, product mix and disclosure habits, so
-a random split leaks all of it and flatters every number that follows.
+Every configuration is trained **five times**. The training split is cut into five folds
+**grouped by channel** — sponsored segments from one creator share vocabulary, product mix
+and disclosure habits, so a random split leaks all of it. Each run trains on four folds and
+is scored on the fifth, which it never saw and which names it.
 
-Each of the five runs trains on four folds and is scored on the fifth, the one it never
-saw. That held-out fold names the resulting model, and its score is that model's honest
-estimate. Five runs therefore give five per-fold scores for one configuration.
-
-A **voter** is one such fold-model: one configuration, one held-out fold.
-
-Not all five are deployed. The **mean of a configuration's three best folds** is its
-selection signal, and those same three folds are the ones that go into the system. The
-weaker two are dropped — they were trained on the same recipe and would add correlated
-noise rather than an independent opinion.
-
-A **branch** is exactly that: three voters sharing model, method and scope, differing only
-in which fold each held out. A branch casts **three votes**.
+A **voter** is one such fold-model. The **mean of a configuration's three best folds** is
+its selection signal, and those same three folds are what gets deployed; the weaker two are
+dropped as correlated noise. Those three voters together are a **branch**, and a branch
+casts three votes.
 
 <p align="center"><img src="figures/fig-cv5.svg" width="100%"
   alt="Cross-validation: five fold-models per configuration, each trained on four folds and
@@ -162,68 +152,42 @@ needs no threshold.
 
 ## 5 · Submitted systems
 
-The evaluation phase allows five submissions. Each is one nine-voter ensemble per subtask;
-they differ in what the branches are allowed to be, which is what turns the five slots into
-an experiment rather than five attempts at the same thing.
+Five submissions are allowed. Every one of them fills the same three slots per subtask —
+one **G**, one **S**, one **MCS** — and which model or method fills which slot is free.
 
-Two rules hold across all of them. Branches are chosen on **cross-validation only** — the
-mean of each configuration's three best folds — and the development set is read once
-afterwards as a transfer check, never as a selection criterion. And the three fold sets of a
-subtask together cover all five folds.
-
-### Slot 1 — one decoder, one encoder
-
-The scope assignment is fixed to **SFT = G, SFTf = MCS, FT = S** under the constraint that
-the whole system runs on **one decoder and one encoder**. Without that constraint the
-ensemble needs a second decoder in memory and the frozen-generalist branch stops being
-cheap.
-
-| | **G** — generalist | **S** — specialist | **MCS** — minority-class |
-|---|---|---|---|
-| **ST1** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · **L1** |
-| **ST2** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
-| **ST3** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
-
-Two backbones carry all 27 fold-models; the adapters are small and hot-swappable on a
-loaded base, so the memory cost is two models, not nine. Trained on the **training split
-alone** (2,353 instances) — the development set is in no voter's training data, which is
-what makes its dev score a transfer check.
-
-Eight of the nine voters read L1234. The exception is the ST1 minority specialist, which
-reads the **transcript alone** and still earns its slot — the one place in the system where
-the cheapest data level wins.
-
-### Slot 2 — the same recipe refit on train + dev
-
-Identical selection procedure, run again over five folds of **train + dev** (2,857
-instances). It cannot be checked on dev by construction — dev is training data for it —
-which is exactly why it is worth a slot of its own: comparing slots 1 and 2 on the test set
-is the only way to answer whether the refit transfers.
+### Submission 1
 
 | | **G** | **S** | **MCS** |
 |---|---|---|---|
-| **ST1** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
-| **ST2** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
-| **ST3** | Phi-4 · SFT · **L12** | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
+| **ST1** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 frozen + LR · **L1** |
+| **ST2** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 frozen + LR · L1234 |
+| **ST3** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 frozen + LR · L1234 |
 
-### Slots 3–5
+Two backbones carry all 27 fold-models: Phi-4 for the generative and the frozen-head
+branch, ettin-encoder-1b for the specialist. Trained on the training split alone. Eight of
+the nine voters read L1234; the ST1 minority specialist reads the transcript alone.
 
-*To be filled as we submit.* The open questions we would most like answered on the test set
-are what a transcript-only system reaches, what the L12 rung reaches, and whether dropping
-the one-decoder constraint buys anything.
+### Submission 2
+
+The same three slots, refit over five folds of **train + dev**. Only ST3's generalist
+differs, reading L12 instead of L1234.
+
+### Submissions 3–5
+
+*To be filled as we submit.*
 
 ### Results
 
-Scores as reported by the official scorer. Development-set figures come from our own
-implementation, verified against the leaderboard to four decimal places (Δ = 0.0000).
+| # | System | Levels | **test mean** | ST1 | ST2 | ST3 | ST3-family |
+|---|---|---|---|---|---|---|---|
+| 1 | trained on train | 1–4 | *pending* | | | | |
+| 2 | refit on train + dev | 1–4 | *pending* | | | | |
+| 3 | — | | | | | | |
+| 4 | — | | | | | | |
+| 5 | — | | | | | | |
 
-| # | System | Levels | dev mean | **test mean** | ST1 | ST2 | ST3 | ST3-family |
-|---|---|---|---|---|---|---|---|---|
-| 1 | one decoder + one encoder, train only | 1–4 | 0.7683 | *pending* | | | | |
-| 2 | same recipe, refit on train + dev | 1–4 | — | *pending* | | | | |
-| 3 | — | | | | | | | |
-| 4 | — | | | | | | | |
-| 5 | — | | | | | | | |
+Branches are chosen on cross-validation only; the development set is read once afterwards
+as a transfer check, never as a selection criterion. Submission 1 reaches **0.7683** there.
 
 ---
 

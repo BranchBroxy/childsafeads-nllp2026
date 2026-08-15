@@ -20,9 +20,9 @@
 
 \begin{scope}[on background layer]
   \draw[draw=black!38, dashed, rounded corners=8pt, line width=0.9pt,
-        fill=black!2] (-7.55, 1.86) rectangle (7.55, -2.18);
+        fill=black!2] (-5.85, 1.86) rectangle (5.85, -2.18);
 \end{scope}
-\node[hdr, anchor=west] at (-7.35, 1.66)
+\node[hdr, anchor=west] at (-5.65, 1.66)
   {\textsc{one subtask: three branches, three voters each}};
 
 \node[branchbox, draw=clrCls!70!black, fill=clrCls!22] (bA) at (\cA, \ybox)
@@ -47,19 +47,14 @@
     % Jeder Voter behaelt seinen eigenen Abgang bis auf die Sammelschiene — es
     % sind neun Stimmen. Die Abgaenge beginnen UNTER der Klammer, damit sie sie
     % nicht durchschneiden.
-    \draw[bus]  ({\xc+\dx}, {\ychip-0.44}) -- ({\xc+\dx}, \ycol);
+    \draw[bus]  ({\xc+\dx}, {\ychip-0.34}) -- ({\xc+\dx}, \ycol);
   }
   \draw[decorate, decoration={brace, amplitude=3pt, mirror, raise=1.4pt},
         \clr!55!black, line width=0.55pt]
         ({\xc-\dchip-0.43}, {\ychip-0.19}) -- ({\xc+\dchip+0.43}, {\ychip-0.19});
+  \node[fill=black!2, inner sep=1.6pt, font=\fontsize{6.2}{7.6}\selectfont\itshape,
+        text=\clr!35!black] at (\xc, {\ychip-0.58}) {one branch};
 }
-% Die Beschriftung steht einmal am linken Rand und gilt fuer alle drei Klammern
-% — zwischen den Branches ist kein Platz, und unter jeder Klammer wuerde sie
-% von den Abgaengen durchschnitten.
-\node[font=\fontsize{6.2}{7.6}\selectfont\itshape, text=black!55, anchor=east,
-      align=right] at ({\cA-\dchip-0.62}, {\ychip-0.34})
-      {three voters\\$=$ one branch};
-
 \draw[bus] ({\cA-\dchip}, \ycol) -- ({\cC+\dchip}, \ycol);
 \node[major, draw=clrEns!80!black, fill=clrEns!28] (ens) at (0, \yens)
   {Plain strict majority over the nine votes};

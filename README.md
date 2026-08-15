@@ -201,18 +201,37 @@ as a transfer check, never as a selection criterion. Submission 1 reaches **0.76
 
 ## 6 · What it costs to run
 
-Inference over all 3,360 instances needs, per subtask, three generative decoder passes,
-three decoder passes to embed for the frozen head, and three encoder passes — 27 passes in
-total, on two loaded backbones.
+A submission run produces labels for the 503 test instances, and the ensemble does that
+once per branch and fold. We measured one pass of each branch type and normalised to
+seconds per instance, because the three runs cover different numbers of instances.
 
-| | passes | backbone |
+| Branch | what one pass does | **per instance** |
 |---|---|---|
-| generative branch (G) | 9 | Phi-4, 14 B, 4-bit |
-| frozen-head branch (MCS) | 9 | Phi-4, frozen, one forward per subtask prompt |
-| encoder branch (S) | 9 | ettin-encoder-1b |
+| **G** — generative | Phi-4 decodes the label as text | **3.02 s** |
+| **S** — encoder | one forward through ettin-1b | 0.29 s |
+| **MCS** — frozen head | one forward through frozen Phi-4, then a logistic regression | 0.19 s |
 
-*Measured wall-clock figures follow; the number quoted in our submission form is the
-inference cost only, not the cost of training the search grid, which is far larger.*
+The generative branch is **sixteen times** more expensive per instance than a frozen head on
+the same backbone — autoregressive decoding against a single forward pass. That, not model
+size, is what dominates the bill.
+
+Rolled up for one submission over the 503 test instances:
+
+| | one voter | one branch (3 folds) |
+|---|---|---|
+| G | 25.3 min | 76.0 min |
+| S | 2.4 min | 7.2 min |
+| MCS | 1.6 min | 4.7 min |
+| **one subtask** (three branches, nine voters) | | **88 min** |
+| **whole system** (three subtasks) | | **≈ 4.4 h** |
+
+Scaled to all 3,360 instances, which is what the submission form asks for: **≈ 29
+GPU-hours**, of which 25 sit in the generative branch. Training the search grid cost far
+more; this figure is inference only.
+
+Measured on single A100-SXM4 and H200 cards, 4-bit quantised backbones, batch sizes from
+`get_vram_batch_config`. Figures are indicative rather than a benchmark: they include model
+loading and were taken on a shared cluster.
 
 ---
 

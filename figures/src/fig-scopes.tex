@@ -7,11 +7,13 @@
   scopebox/.style={sysbox, text width=3.85cm, minimum width=4.05cm,
     minimum height=0.86cm, font=\fontsize{6.9}{8.4}\selectfont\bfseries},
   chip/.style={lab, minimum height=0.36cm},
+  freq/.style={rectangle, draw, line width=0.45pt, minimum height=0.38cm,
+    anchor=south west, inner sep=0pt},
 ]
 
-\def\ybox{1.55}   % Mitte der Scope-Box
-\def\ybus{0.78}   % waagerechter Verteiler
-\def\ychip{0.34}  % Mitte der Label-Chips
+\def\ybox{1.86}   % Mitte der Scope-Box
+\def\ybus{1.02}   % waagerechter Verteiler
+\def\ychip{0.55}  % Mitte der Label-Chips
 
 \def\cA{-4.75}
 \def\cB{0}
@@ -25,7 +27,7 @@
 \draw[bus] ({\cA-1.08}, \ybus) -- ({\cA+1.08}, \ybus);
 \foreach \dx/\lbl in {-1.08/ST1, 0/ST2, 1.08/ST3}{
   \node[chip, draw=clrCls!60!black, fill=clrCls!14, text width=0.72cm]
-    (a\lbl) at ({\cA+\dx}, \ychip) {\lbl};
+    at ({\cA+\dx}, \ychip) {\lbl};
   \draw[edge] ({\cA+\dx}, \ybus) -- ({\cA+\dx}, {\ychip+0.18});
 }
 
@@ -35,35 +37,53 @@
    trains on one subtask}};
 \draw[bus] (bB.south) -- (\cB, \ybus);
 \node[chip, draw=clrPrompt!65!black, fill=clrPrompt!18, text width=2.85cm]
-  (bl) at (\cB, \ychip) {all labels of ST$_k$};
+  at (\cB, \ychip) {ST$_k$};
 \draw[edge] (\cB, \ybus) -- (\cB, {\ychip+0.18});
 
 % ── Minority-class specialist ──────────────────────────────────────────────
 \node[scopebox, draw=clrPCS!72!black, fill=clrPCS!26] (bC) at (\cC, \ybox)
   {Min.-Class Spec.\ (MCS)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
-   one subtask, majority dropped}};
+   one subtask $\cdot$ rare labels only}};
 \draw[bus] (bC.south) -- (\cC, \ybus);
-\draw[bus] ({\cC-0.86}, \ybus) -- ({\cC+0.86}, \ybus);
-\node[chip, draw=black!45, fill=black!8, text width=1.30cm] (mx)
-  at ({\cC-0.86}, \ychip) {\textcolor{black!50}{majority}};
-\draw[black!35, line width=0.4pt] (mx.south west) -- (mx.north east);
-\draw[black!35, line width=0.4pt] (mx.north west) -- (mx.south east);
-\node[chip, draw=clrPCS!62!black, fill=clrPCS!16, text width=1.30cm] (mk)
-  at ({\cC+0.86}, \ychip) {rare labels};
-\draw[edge, black!30] ({\cC-0.86}, \ybus) -- ({\cC-0.86}, {\ychip+0.18});
-\draw[edge] ({\cC+0.86}, \ybus) -- ({\cC+0.86}, {\ychip+0.18});
-\node[note, anchor=north] at ({\cC-0.86}, {\ychip-0.28}) {$>50\,\%$ of the mass};
+\draw[edge] (\cC, \ybus) -- (\cC, {\ychip+0.21});
+
+% Frequenzleiste: Blockbreite proportional zum Anteil. Von links faellt Label
+% um Label raus, bis der weggefallene Anteil 50 % ueberschreitet — hier nach
+% dem zweiten Block. Der Rest ist der Trainingsraum des MCS.
+\begin{scope}[shift={({\cC-1.80}, {\ychip-0.19})}]
+  \foreach \x/\w in {0/1.05, 1.05/0.80}{
+    \node[freq, draw=black!42, fill=black!8, minimum width=\w cm] at (\x, 0) {};
+    \draw[black!32, line width=0.4pt] (\x, 0) -- ({\x+\w}, 0.38);
+    \draw[black!32, line width=0.4pt] (\x, 0.38) -- ({\x+\w}, 0);
+  }
+  \foreach \x/\w in {1.85/0.62, 2.47/0.44, 2.91/0.36, 3.27/0.19, 3.46/0.14}{
+    \node[freq, draw=clrPCS!60!black, fill=clrPCS!16, minimum width=\w cm]
+      at (\x, 0) {};
+  }
+  \draw[decorate, decoration={brace, amplitude=3pt, mirror, raise=1.5pt},
+        black!45, line width=0.5pt] (0, 0) -- (1.85, 0)
+    node[midway, below=4.5pt, font=\fontsize{5.7}{7}\selectfont, text=black!55,
+         align=center, text width=1.72cm]
+         {\textbf{dropped}\\most frequent labels, until $>50\,\%$};
+  \draw[decorate, decoration={brace, amplitude=3pt, mirror, raise=1.5pt},
+        clrPCS!55!black, line width=0.5pt] (1.85, 0) -- (3.60, 0)
+    node[midway, below=4.5pt, font=\fontsize{5.7}{7}\selectfont,
+         text=clrPCS!45!black, align=center, text width=1.62cm]
+         {\textbf{kept}\\what the MCS trains on};
+\end{scope}
 
 % ── die Regel, kompakt ─────────────────────────────────────────────────────
-\node[hdr, anchor=west] at (-6.75, -0.78)
-  {\textsc{which labels the MCS drops}};
+\node[hdr, anchor=west] at (-6.75, -1.72)
+  {\textsc{where the cut falls in each subtask}};
 \node[anchor=north west, font=\fontsize{6.6}{9.4}\selectfont, text width=12.3cm]
-  at (-6.75, -1.04)
+  at (-6.75, -1.98)
   {\textbf{ST1}\quad \texttt{physical\_goods} 47\,\% $+$
-   \texttt{digital\_content\_or\_services} 46\,\% $=$ 93\,\%\\
+   \texttt{digital\_content\_or\_services} 46\,\% $=$ 93\,\% dropped,
+   3 of 5 labels kept\\
    \textbf{ST2}\quad \texttt{apps} 29\,\% $+$ \texttt{hardware\_electronics}
-   22\,\% $=$ 51\,\%\\
-   \textbf{ST3}\quad \texttt{misleading\_claim} 54\,\%};
+   22\,\% $=$ 51\,\% dropped, 10 of 12 labels kept\\
+   \textbf{ST3}\quad \texttt{misleading\_claim} 54\,\% dropped,
+   7 of 8 labels kept};
 
 \end{tikzpicture}
 \end{document}

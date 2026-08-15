@@ -17,7 +17,8 @@ It contains **no task data** — see [DATA.md](DATA.md) for the licence and ethi
 The scope axis decides **which training data a voter sees**. It carries the main idea of
 the system: three scopes, three different strengths, three different failure modes.
 
-![Class scopes: generalist, specialist, minority-class specialist](figures/fig-scopes.svg)
+<p align="center"><img src="figures/fig-scopes.svg" width="100%"
+  alt="Class scopes: generalist trains on all subtasks, specialist on one, minority-class specialist on one subtask with the most frequent labels dropped until the dropped share passes 50 percent"></p>
 
 **Generalist (G).** Trains jointly on all three subtasks in a multi-task setup. The shared
 signal is meant to build broad domain knowledge — patterns common to the subtasks that no
@@ -28,9 +29,10 @@ a subtask switch: the prepended prompt selects the subtask at inference.
 that subtask's label set more tightly. In practice it performs on a par with the
 generalist; what it mainly contributes is a **different error profile** the vote can use.
 
-**Minority-class specialist (MCS).** A specialist trained without the majority labels.
-The rule: sort a subtask's labels by frequency and remove the most frequent ones **until
-the removed set exceeds 50 % of the mass**. What remains is what the MCS trains on.
+**Minority-class specialist (MCS).** Like a specialist, it trains on **one subtask** — but
+not on all of that subtask's labels. Sort the labels by frequency and drop them from the
+top, one after another, **until the dropped labels together exceed 50 % of the mass**.
+Everything below that cut is the MCS's label space, and it never sees the rest.
 
 | Subtask | removed (cumulative share) | MCS trains on |
 |---|---|---|
@@ -60,7 +62,8 @@ They are **functional positions**, not method names: what does the same thing on
 and on an encoder sits in the same column, which is what makes the grid comparable across
 model families.
 
-![Adaptation methods as functional positions](figures/fig-methods.svg)
+<p align="center"><img src="figures/fig-methods.svg" width="100%"
+  alt="Adaptation methods as functional positions: OPRO, SFT, ClsHead/FT, Base heads and frozen-generalist heads"></p>
 
 | Column | Decoder | Encoder | What it is |
 |---|---|---|---|
@@ -86,7 +89,8 @@ Two things are worth spelling out because the naming hides them:
 Each cell of the resulting grid is one configuration. This is what the search space looks
 like once trained:
 
-![Cross-validation grid over model × method × scope × level](figures/voter-grid.png)
+<p align="center"><img src="figures/voter-grid.png" width="100%"
+  alt="Cross-validation grid over model, method, scope and access level"></p>
 
 *Every cell is one configuration's three-best-fold mean. The three schematics above
 are TikZ; sources are in [`figures/src/`](figures/src) and
@@ -109,7 +113,8 @@ therefore casts three votes.
 An **ensemble** is three branches — nine voters — deciding every instance by **plain strict
 majority** (> 50 % of votes cast).
 
-![The nine-voter ensemble](figures/fig-ensemble.svg)
+<p align="center"><img src="figures/fig-ensemble.svg" width="100%"
+  alt="Nine-voter ensemble: three branches of three voters each, decided by plain strict majority"></p>
 
 **Cross-validation.** Five folds over the training set, grouped by **channel**, with an
 assertion that no channel appears in two folds. Sponsored segments from one creator share

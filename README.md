@@ -98,7 +98,42 @@ page).*
 
 ---
 
-## 3 · From cross-validation to a branch
+## 3 · Models, and how a voter is named
+
+The pool spans two model families, because they fail differently. Decoders can be tuned
+generatively; encoders cannot generate at all but are structurally better suited to
+classification, which is why we did not stay with decoders only.
+
+| | model | size | role |
+|---|---|---|---|
+| decoder | [Ministral-8B](https://huggingface.co/mistralai/Ministral-8B-Instruct-2410) | 8 B | 4-bit QLoRA |
+| decoder | [Phi-4](https://huggingface.co/microsoft/phi-4) | 14 B | 4-bit QLoRA |
+| encoder | [ettin-encoder-1b](https://huggingface.co/jhu-clsp/ettin-encoder-1b) | 1 B | full fine-tuning |
+| encoder | [EuroBERT-610m](https://huggingface.co/EuroBERT/EuroBERT-610m) | 610 M | full fine-tuning |
+
+Every point in the grid is one **configuration**, and its name states the three axes plus
+the data it may read:
+
+```
+        phi4  -  SFTf-LR  -  MCS-st3  -  L1234  -ft
+        ────     ───────     ───────     ─────  ───
+        model    method      scope       levels  full text, no truncation
+```
+
+- **model** — the backbone, from the table above.
+- **method** — how it was trained (§2). `SFTf-LR` is a logistic regression on the frozen
+  generalist; `FTf-` is the same position on an encoder. The scope in the name always refers
+  to the **head**, never to the frozen backbone underneath it.
+- **scope** — what it was allowed to learn (§1). `G` needs no subtask, `S` and `MCS` name
+  theirs.
+- **levels** — which access levels the input contains, e.g. `L1234` is everything,
+  `L1` the transcript alone.
+
+The axis labels in the grid figure above read the same way.
+
+---
+
+## 4 · From cross-validation to a branch
 
 Every configuration is trained **five times**. The training split is cut into five folds
 **f0–f4**, grouped by channel — sponsored segments from one creator share vocabulary,
@@ -124,7 +159,7 @@ votes.
 
 ---
 
-## 4 · From three branches to nine voters
+## 5 · From three branches to nine voters
 
 One branch is one opinion, sampled three times. That is not an ensemble — three voters of
 the same configuration agree far too often to arbitrate anything. What makes the vote work
@@ -158,7 +193,7 @@ needs no threshold.
 
 ---
 
-## 5 · Submitted systems
+## 6 · Submitted systems
 
 Five submissions are allowed. Every one of them fills the same three slots per subtask —
 one **G**, one **S**, one **MCS** — and which model or method fills which slot is free.
@@ -199,7 +234,7 @@ as a transfer check, never as a selection criterion. Submission 1 reaches **0.76
 
 ---
 
-## 6 · What it costs to run
+## 7 · What it costs to run
 
 A submission run produces labels for the 503 test instances, and the ensemble does that
 once per branch and fold. We measured one pass of each branch type and normalised to
@@ -235,7 +270,7 @@ loading and were taken on a shared cluster.
 
 ---
 
-## 7 · What each data level buys
+## 8 · What each data level buys
 
 The task ships four cumulative access levels ordered by collection cost. **The grid was
 trained at every level, not just at the top:** each of L1, L12, L123 and L1234 carries
@@ -269,7 +304,7 @@ For an authority weighing crawl cost against accuracy: fetch video metadata alwa
 channel context, fetch product pages only if commercial type and product category matter.
 
 Two caveats on the record. The ladder was measured before the full-text retraining
-described in §8, so every rung sits on capped inputs; the L1 rung suffers most, because
+described in §9, so every rung sits on capped inputs; the L1 rung suffers most, because
 its scaffold ate a larger share of a short sequence. The gaps are real and the ordering has
 held up in everything we have measured since, but the exact sizes are not settled, and we
 would not want the +0.119 quoted to three decimals. Re-running the ladder on the retrained
@@ -277,7 +312,7 @@ grid is the first thing we will add here.
 
 ---
 
-## 8 · Negative results
+## 9 · Negative results
 
 - **Input truncation.** Our first training wave capped inputs at a sequence length that
   silently cut **16.9 % of product pages** and 7.2 % of descriptions, with the truncation
@@ -291,7 +326,7 @@ grid is the first thing we will add here.
 
 ---
 
-## 9 · Scope, reproducibility, ethics
+## 10 · Scope, reproducibility, ethics
 
 This repository documents the system. It deliberately contains no task data, no
 per-instance predictions (they are tied to identifiable channels), and no trained adapter

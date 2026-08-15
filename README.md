@@ -236,40 +236,41 @@ as a transfer check, never as a selection criterion. Submission 1 reaches **0.76
 
 ## 7 · What it costs to run
 
-A submission run takes the segment text at the levels a voter may read and produces its
-labels. We timed one pass of each branch type and normalised to seconds per instance **per
-subtask**, since a generalist answers all three subtasks in one call while the specialists
-answer one.
+The question a monitoring operator asks is not what a corpus costs but what **one segment**
+costs. We timed one pass of each branch type and divided by the instances it covered.
 
-| Branch | one pass | **s / instance / subtask** |
+| Branch | what it does for one segment | **seconds** |
 |---|---|---|
 | **G** — Phi-4, generative | decodes the label as text | **1.01** |
 | **S** — ettin-1b, fine-tuned | one encoder forward | 0.29 |
 | **MCS** — Phi-4, frozen | one decoder forward, then a logistic regression | 0.19 |
 
-Decoding is what costs: the generative branch is **five times** a frozen forward on the same
-backbone and three times a full encoder pass, despite the encoder being fine-tuned and the
-frozen decoder being fourteen times its size.
+Decoding is what costs. The generative branch is **five times** a frozen forward on the same
+backbone and three times a full pass through the encoder — even though the encoder is
+fine-tuned and the frozen decoder is fourteen times its size. Nothing about model size
+predicts this; the autoregressive loop does.
 
-### ST1, one submission run over 503 test instances
+### One segment, end to end
 
-| Branch | configuration | one voter | branch (3 folds) |
+Each branch runs its three fold-models, and each subtask runs three branches:
+
+| | one voter | one branch (3 folds) | per subtask |
 |---|---|---|---|
-| **G** | Phi-4 · SFT · L1234 | 8.4 min | 25.3 min |
-| **S** | ettin-1b · FT · L1234 | 2.4 min | 7.2 min |
-| **MCS** | Phi-4 frozen + LR · L1 | 1.6 min | 4.7 min |
-| | | **nine voters** | **37.2 min** |
+| **G** | 1.01 s | 3.02 s | |
+| **S** | 0.29 s | 0.86 s | |
+| **MCS** | 0.19 s | 0.56 s | |
+| | | | **4.4 s** |
 
-ST2 and ST3 use the same three configurations and cost the same, except that their minority
-branch reads L1234 rather than L1 — a longer input, so the 1.6 min above is the floor rather
-than the average.
+**All three subtasks: ≈ 13 seconds per segment**, 27 passes on two loaded backbones. Over
+the full corpus of 3,360 that is **≈ 12 GPU-hours**, which is what the submission form asks
+for; a submission run over the 503 test instances takes about 1.9 hours.
 
-**Whole system:** three subtasks × 37.2 min ≈ **1.9 h** for a submission. Scaled to all
-3,360 instances, which is what the submission form asks for: **≈ 12 GPU-hours**, of which 9
-are the generative branch. Training the search grid cost far more; this is inference only.
-
-Measured on single A100-SXM4 and H200 cards with 4-bit backbones. The figures include model
-loading and were taken on a shared cluster, so they are indicative rather than a benchmark.
+These are throughput figures from batched runs on single A100-SXM4 and H200 cards, with
+model loading amortised over the whole pass. A genuine cold start on a single segment is
+dominated by loading the two backbones, which takes minutes; a warm system processing one
+segment at a time loses the batching advantage, so 13 seconds is a floor rather than a
+promise. Training the search grid cost far more than any of this; the figures are inference
+only.
 
 ---
 

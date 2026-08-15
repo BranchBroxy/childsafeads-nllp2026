@@ -98,32 +98,48 @@ page).*
 
 ---
 
-## 3 · The nine-voter ensemble
+## 3 · From cross-validation to a branch
 
-Three terms build the system from a single vote up.
+Each configuration from the grid — one model, one method, one scope — is not trained once
+but **five times**. The training split is cut into five folds **grouped by channel**, with
+an assertion that no channel appears in two folds. That grouping is not a formality:
+sponsored segments from one creator share vocabulary, product mix and disclosure habits, so
+a random split leaks all of it and flatters every number that follows.
 
-A **voter** is one model, trained in one method on one class scope, on four of five folds
-and evaluated on the held-out fifth that names it.
+Each of the five runs trains on four folds and is scored on the fifth, the one it never
+saw. That held-out fold names the resulting model, and its score is that model's honest
+estimate. Five runs therefore give five per-fold scores for one configuration.
 
-A **branch** is three voters sharing model, method and scope, differing only in which fold
-each held out — **the three folds on which that configuration scored highest**. A branch
-therefore casts three votes.
+A **voter** is one such fold-model: one configuration, one held-out fold.
 
-An **ensemble** is three branches — nine voters — deciding every instance by **plain strict
-majority** (> 50 % of votes cast).
+Not all five are deployed. The **mean of a configuration's three best folds** is its
+selection signal, and those same three folds are the ones that go into the system. The
+weaker two are dropped — they were trained on the same recipe and would add correlated
+noise rather than an independent opinion.
+
+A **branch** is exactly that: three voters sharing model, method and scope, differing only
+in which fold each held out. A branch casts **three votes**.
 
 <p align="center"><img src="figures/fig-cv5.svg" width="100%"
   alt="Cross-validation: five fold-models per configuration, each trained on four folds and
   scored on the held-out fifth; the three best folds are deployed as one branch"></p>
 
+---
+
+## 4 · From three branches to nine voters
+
+One branch is one opinion, sampled three times. That is not an ensemble — three voters of
+the same configuration agree far too often to arbitrate anything. What makes the vote work
+is that the three branches are chosen to be **structurally dissimilar**: they differ in
+class scope (§1), and in practice also in method and backbone (§2), so their mistakes are
+not the same mistakes.
+
+An **ensemble** is therefore three branches — one **G**, one **S**, one **MCS** — nine
+voters in total, deciding every instance by **plain strict majority**: a label fires when
+more than half the votes cast carry it.
+
 <p align="center"><img src="figures/fig-ensemble.svg" width="100%"
   alt="Nine-voter ensemble: three branches of three voters each, decided by plain strict majority"></p>
-
-**Cross-validation.** Five folds over the training set, grouped by **channel**, with an
-assertion that no channel appears in two folds. Sponsored segments from one creator share
-vocabulary, product mix and disclosure habits; a random split leaks all of it. Each
-configuration is trained five times, giving five per-fold macro-F1 scores; the **mean of
-the three best** is its selection signal and names the three voters it deploys.
 
 **Fold coverage.** The three fold sets are chosen so that **all five folds appear across
 the nine voters**. No slice of the training data goes unused, and the out-of-fold estimate
@@ -144,7 +160,7 @@ needs no threshold.
 
 ---
 
-## 4 · Submitted systems
+## 5 · Submitted systems
 
 The evaluation phase allows five submissions. Each is one nine-voter ensemble per subtask;
 they differ in what the branches are allowed to be, which is what turns the five slots into
@@ -211,7 +227,7 @@ implementation, verified against the leaderboard to four decimal places (Δ = 0.
 
 ---
 
-## 5 · What it costs to run
+## 6 · What it costs to run
 
 Inference over all 3,360 instances needs, per subtask, three generative decoder passes,
 three decoder passes to embed for the frozen head, and three encoder passes — 27 passes in
@@ -228,7 +244,7 @@ inference cost only, not the cost of training the search grid, which is far larg
 
 ---
 
-## 6 · What each data level buys
+## 7 · What each data level buys
 
 The task ships four cumulative access levels ordered by collection cost. **The grid was
 trained at every level, not just at the top:** each of L1, L12, L123 and L1234 carries
@@ -262,7 +278,7 @@ For an authority weighing crawl cost against accuracy: fetch video metadata alwa
 channel context, fetch product pages only if commercial type and product category matter.
 
 Two caveats on the record. The ladder was measured before the full-text retraining
-described in §7, so every rung sits on capped inputs; the L1 rung suffers most, because
+described in §8, so every rung sits on capped inputs; the L1 rung suffers most, because
 its scaffold ate a larger share of a short sequence. The gaps are real and the ordering has
 held up in everything we have measured since, but the exact sizes are not settled, and we
 would not want the +0.119 quoted to three decimals. Re-running the ladder on the retrained
@@ -270,7 +286,7 @@ grid is the first thing we will add here.
 
 ---
 
-## 7 · Negative results
+## 8 · Negative results
 
 - **Input truncation.** Our first training wave capped inputs at a sequence length that
   silently cut **16.9 % of product pages** and 7.2 % of descriptions, with the truncation
@@ -284,7 +300,7 @@ grid is the first thing we will add here.
 
 ---
 
-## 8 · Scope, reproducibility, ethics
+## 9 · Scope, reproducibility, ethics
 
 This repository documents the system. It deliberately contains no task data, no
 per-instance predictions (they are tied to identifiable channels), and no trained adapter

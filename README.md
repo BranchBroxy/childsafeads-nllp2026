@@ -17,7 +17,7 @@ It contains **no task data** — see [DATA.md](DATA.md) for the licence and ethi
 The scope axis decides **which training data a voter sees**. It carries the main idea of
 the system: three scopes, three different strengths, three different failure modes.
 
-![Class scopes: generalist, specialist, minority-class specialist](figures/fig-scopes.png)
+![Class scopes: generalist, specialist, minority-class specialist](figures/fig-scopes.svg)
 
 **Generalist (G).** Trains jointly on all three subtasks in a multi-task setup. The shared
 signal is meant to build broad domain knowledge — patterns common to the subtasks that no
@@ -60,7 +60,7 @@ They are **functional positions**, not method names: what does the same thing on
 and on an encoder sits in the same column, which is what makes the grid comparable across
 model families.
 
-![Adaptation methods as functional positions](figures/fig-methods.png)
+![Adaptation methods as functional positions](figures/fig-methods.svg)
 
 | Column | Decoder | Encoder | What it is |
 |---|---|---|---|
@@ -88,9 +88,10 @@ like once trained:
 
 ![Cross-validation grid over model × method × scope × level](figures/voter-grid.png)
 
-*Every cell is one configuration's three-best-fold mean. TikZ sources for all
-figures are in [`figures/src/`](figures/src) — `bash figures/src/build.sh` rebuilds
-them.*
+*Every cell is one configuration's three-best-fold mean. The three schematics above
+are TikZ; sources are in [`figures/src/`](figures/src) and
+`bash figures/src/build.sh` rebuilds them as PDF (for the paper) and SVG (for this
+page).*
 
 ---
 
@@ -108,7 +109,7 @@ therefore casts three votes.
 An **ensemble** is three branches — nine voters — deciding every instance by **plain strict
 majority** (> 50 % of votes cast).
 
-![The nine-voter ensemble](figures/fig-ensemble.png)
+![The nine-voter ensemble](figures/fig-ensemble.svg)
 
 **Cross-validation.** Five folds over the training set, grouped by **channel**, with an
 assertion that no channel appears in two folds. Sponsored segments from one creator share

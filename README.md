@@ -141,21 +141,31 @@ needs no threshold.
 
 ---
 
-## 4 · Submission 1 — SFT × SFTf × FT
+## 4 · Submission 1 — SFT × SFTf × FT on two models
 
 The scope assignment is fixed to **SFT = G, SFTf = MCS, FT = S**, and each slot takes its
-best configuration by cross-validation. All nine voters read **L1234**.
+best configuration by cross-validation — under the constraint that the whole system uses
+**one decoder and one encoder**. Without that constraint the ensemble would need a second
+decoder in memory and the frozen-generalist branch would stop being cheap.
 
 | | **G** — SFT | **S** — FT | **MCS** — SFTf |
 |---|---|---|---|
-| **ST1** | `min` folds 4,2,3 | `ettin-1b` folds 2,4,0 | `min`-ClsHead folds 4,1,2 |
-| **ST2** | `phi4` folds 4,2,0 | `ettin-1b` folds 4,1,2 | `min`-LR folds 2,4,3 |
+| **ST1** | `phi4` folds 2,4,0 | `ettin-1b` folds 2,4,1 | `phi4`-LR folds 4,3,0 |
+| **ST2** | `phi4` folds 4,2,1 | `ettin-1b` folds 4,1,0 | `phi4`-LR folds 3,2,1 |
 | **ST3** | `phi4` folds 0,2,1 | `ettin-1b` folds 4,2,1 | `phi4`-LR folds 3,2,0 |
+
+Two backbones carry all 27 fold-models: **Phi-4** for the generative and the frozen-head
+branch, **ettin-encoder-1b** for the specialist. The adapters are small and hot-swappable on
+a loaded base, so the memory cost is two models, not nine.
+
+Eight of the nine voters read L1234; the ST1 minority specialist reads the **transcript
+alone** and still earns its slot — the one place in the system where the cheapest data level
+wins. The declared access level is the highest one used: **1–4**.
 
 | | mean | ST1 | ST2 | ST3 |
 |---|---|---|---|---|
-| out-of-fold (train, 2,353 instances) | 0.6320 | 0.4804 | 0.8169 | 0.5988 |
-| **development set** (504 instances) | **0.7675** | 0.8641 | 0.7549 | 0.6835 |
+| out-of-fold (train, 2,353 instances) | 0.6090 | 0.4139 | 0.8143 | 0.5988 |
+| **development set** (504 instances) | **0.7683** | 0.8630 | 0.7585 | 0.6835 |
 | test set (503 instances) | *pending* | | | |
 
 The two internal numbers are on different scales. Out-of-fold, an instance is voted on only
@@ -163,8 +173,12 @@ by the branches whose deployed folds contain its held-out fold — **one to thre
 dev, all nine fold-models vote on every instance, which is also the situation at test time.
 Only the dev number is comparable to a leaderboard.
 
-Dev was never used for selection (§5); it is a transfer check, read once after the
-composition was frozen. Further systems will be added here as we submit them.
+**Training data.** Every voter is trained on the training split alone (2,353 instances,
+channel-disjoint five-fold CV). The development set is not in any voter's training data,
+which is what makes the dev row above a transfer check rather than a restatement. Dev was
+also never used for selection (§5); it is read once, after the composition is frozen.
+
+Further systems will be added here as we submit them.
 
 ---
 

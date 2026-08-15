@@ -17,16 +17,18 @@ No task data here; see [DATA.md](DATA.md) for licence and ethics terms.
 
 ### Contents
 
-- **[1 · Class scope](#1--class-scope)** — which labels a voter is trained on: generalist, specialist, minority-class specialist
-- **[2 · Adaptation methods](#2--adaptation-methods)** — what is trained: generative, head on a tuned backbone, head on a frozen one, prompt only
-- **[3 · Models and naming](#3--models-and-naming)** — the four backbones, and how to read a configuration's name
-- **[4 · Cross-validation and branches](#4--cross-validation-and-branches)** — five channel-disjoint folds per configuration; the best three become a branch
-- **[5 · The nine-voter ensemble](#5--the-nine-voter-ensemble)** — three dissimilar branches, plain strict majority, and the taxonomy rules on top
-- **[6 · Submitted systems](#6--submitted-systems)** — what each submission contains, and the results table
-- **[7 · What it costs to run](#7--what-it-costs-to-run)** — seconds per segment and GPU-hours per corpus, measured
-- **[8 · What each data level buys](#8--what-each-data-level-buys)** — the level ladder read against collection cost
-- **[9 · Negative results and limits](#9--negative-results-and-limits)** — a truncation bug found by audit, two things that did not work, and what our numbers cannot settle
-- **[10 · Scope and ethics](#10--scope-and-ethics)** — what this repository deliberately does not contain
+| Section | What it covers |
+|---|---|
+| **[1 · Class scope](#1--class-scope)** | which labels a voter is trained on: generalist, specialist, minority-class specialist |
+| **[2 · Adaptation methods](#2--adaptation-methods)** | what is trained: generative, head on a tuned backbone, head on a frozen one, prompt only |
+| **[3 · Models and naming](#3--models-and-naming)** | the four backbones, and how to read a configuration's name |
+| **[4 · Cross-validation and branches](#4--cross-validation-and-branches)** | five channel-disjoint folds per configuration; the best three become a branch |
+| **[5 · The nine-voter ensemble](#5--the-nine-voter-ensemble)** | three dissimilar branches, plain strict majority, and the taxonomy rules on top |
+| **[6 · Submitted systems](#6--submitted-systems)** | what each submission contains, and the results table |
+| **[7 · What it costs to run](#7--what-it-costs-to-run)** | seconds per segment and GPU-hours per corpus, measured |
+| **[8 · What each data level buys](#8--what-each-data-level-buys)** | the level ladder read against collection cost |
+| **[9 · Negative results and limits](#9--negative-results-and-limits)** | a truncation bug found by audit, two things that did not work, and what our numbers cannot settle |
+| **[10 · Scope and ethics](#10--scope-and-ethics)** | what this repository deliberately does not contain |
 
 ---
 

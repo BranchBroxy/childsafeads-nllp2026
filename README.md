@@ -144,58 +144,87 @@ needs no threshold.
 
 ---
 
-## 4 · The submitted system
+## 4 · Submitted systems
 
-The scope assignment is fixed to **SFT = G, SFTf = MCS, FT = S**, and each slot takes its
-best configuration by cross-validation — under the constraint that the whole system runs on
-**one decoder and one encoder**. Without that constraint the ensemble would need a second
-decoder in memory and the frozen-generalist branch would stop being cheap.
+The evaluation phase allows five submissions. Each is one nine-voter ensemble per subtask;
+they differ in what the branches are allowed to be, which is what turns the five slots into
+an experiment rather than five attempts at the same thing.
+
+Two rules hold across all of them. Branches are chosen on **cross-validation only** — the
+mean of each configuration's three best folds — and the development set is read once
+afterwards as a transfer check, never as a selection criterion. And the three fold sets of a
+subtask together cover all five folds.
+
+### Slot 1 — one decoder, one encoder
+
+The scope assignment is fixed to **SFT = G, SFTf = MCS, FT = S** under the constraint that
+the whole system runs on **one decoder and one encoder**. Without that constraint the
+ensemble needs a second decoder in memory and the frozen-generalist branch stops being
+cheap.
 
 | | **G** — generalist | **S** — specialist | **MCS** — minority-class |
 |---|---|---|---|
-| method | generative SFT | fully fine-tuned encoder | frozen generalist + LR head |
-| backbone | Phi-4 | ettin-encoder-1b | Phi-4 (frozen) |
+| **ST1** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · **L1** |
+| **ST2** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
+| **ST3** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
 
-Two backbones carry all 27 fold-models. The adapters are small and hot-swappable on a
-loaded base, so the memory cost is two models, not nine.
+Two backbones carry all 27 fold-models; the adapters are small and hot-swappable on a
+loaded base, so the memory cost is two models, not nine. Trained on the **training split
+alone** (2,353 instances) — the development set is in no voter's training data, which is
+what makes its dev score a transfer check.
 
 Eight of the nine voters read L1234. The exception is the ST1 minority specialist, which
 reads the **transcript alone** and still earns its slot — the one place in the system where
-the cheapest data level wins. The declared access level is the highest one used: **1–4**.
+the cheapest data level wins.
 
-| | mean | ST1 | ST2 | ST3 |
-|---|---|---|---|---|
-| **development set** (504 instances) | **0.7683** | 0.8630 | 0.7585 | 0.6835 |
-| test set (503 instances) | *pending* | | | |
+### Slot 2 — the same recipe refit on train + dev
 
-**Training data.** Every voter is trained on the training split alone (2,353 instances,
-channel-disjoint five-fold CV). The development set is in no voter's training data, which
-is what makes the dev row a transfer check rather than a restatement. Dev was also never
-used for selection (§5); it is read once, after the composition is frozen.
+Identical selection procedure, run again over five folds of **train + dev** (2,857
+instances). It cannot be checked on dev by construction — dev is training data for it —
+which is exactly why it is worth a slot of its own: comparing slots 1 and 2 on the test set
+is the only way to answer whether the refit transfers.
 
-A second system refits the same recipe on train + dev. It cannot be checked on dev by
-construction — dev is training data for it — which is precisely why it is worth submitting
-separately: the comparison of the two on the test set is the only way to answer whether the
-refit transfers.
+| | **G** | **S** | **MCS** |
+|---|---|---|---|
+| **ST1** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
+| **ST2** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
+| **ST3** | Phi-4 · SFT · **L12** | ettin-1b · FT · L1234 | Phi-4 · SFTf-LR · L1234 |
+
+### Slots 3–5
+
+*To be filled as we submit.* The open questions we would most like answered on the test set
+are what a transcript-only system reaches, what the L12 rung reaches, and whether dropping
+the one-decoder constraint buys anything.
+
+### Results
+
+Scores as reported by the official scorer. Development-set figures come from our own
+implementation, verified against the leaderboard to four decimal places (Δ = 0.0000).
+
+| # | System | Levels | dev mean | **test mean** | ST1 | ST2 | ST3 | ST3-family |
+|---|---|---|---|---|---|---|---|---|
+| 1 | one decoder + one encoder, train only | 1–4 | 0.7683 | *pending* | | | | |
+| 2 | same recipe, refit on train + dev | 1–4 | — | *pending* | | | | |
+| 3 | — | | | | | | | |
+| 4 | — | | | | | | | |
+| 5 | — | | | | | | | |
 
 ---
 
-## 5 · Why selection never touches the development set
+## 5 · What it costs to run
 
-We measured the reliability of the development set by splitting it in half and correlating
-the two halves across configurations:
+Inference over all 3,360 instances needs, per subtask, three generative decoder passes,
+three decoder passes to embed for the frozen head, and three encoder passes — 27 passes in
+total, on two loaded backbones.
 
-| | ST1 | ST2 | ST3 |
-|---|---|---|---|
-| split-half correlation *r* | 0.06 | 0.03 | 0.37 |
+| | passes | backbone |
+|---|---|---|
+| generative branch (G) | 9 | Phi-4, 14 B, 4-bit |
+| frozen-head branch (MCS) | 9 | Phi-4, frozen, one forward per subtask prompt |
+| encoder branch (S) | 9 | ettin-encoder-1b |
 
-With 504 instances, differences below roughly 0.03 on dev are noise. A search that ranks
-candidates on dev fits that noise — and we could show it: freely searching fold-models
-against dev produced systems that looked better on dev and were not.
-
-**The metric is verified, not assumed.** The official scorer is not public, so we
-reimplemented it and calibrated against the leaderboard: our local score matched the
-returned score to four decimal places across every column (Δ = 0.0000).
+*Measured wall-clock figures follow; the number quoted in our submission form is the
+inference cost only, not the cost of training the search grid, which is far larger.*
 
 ---
 

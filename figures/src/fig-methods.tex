@@ -4,19 +4,20 @@
 \begin{tikzpicture}[
   % Feste Spaltenbreiten und eine Zeilenhoehe fuer alle fuenf Zeilen: sonst
   % wachsen die Boxen mit ihrem Text und schieben sich uebereinander.
+  % Die Eingabe hat KEINE eigene Spalte — sie ist in jeder Zeile dieselbe
+  % (ein Segment) und hat den Pfeil zum Backbone nur eingeklemmt.
   rowlab/.style={font=\fontsize{6.9}{8.2}\selectfont\bfseries, anchor=east,
     align=right},
-  bb/.append style={text width=2.95cm, minimum width=3.15cm, minimum height=0.80cm},
+  bb/.append style={text width=3.15cm, minimum width=3.35cm, minimum height=0.80cm},
   io/.append style={text width=1.15cm, minimum width=1.35cm, minimum height=0.68cm},
   lab/.append style={text width=1.55cm, minimum width=1.75cm, minimum height=0.52cm},
 ]
 
-\def\xlab{-6.35}
-\def\xin{-5.35}
-\def\xbb{-2.90}
-\def\xhd{0.10}
-\def\xout{2.35}
-\def\xnote{3.45}
+\def\xlab{-4.15}
+\def\xbb{-2.20}
+\def\xhd{0.85}
+\def\xout{2.95}
+\def\xnote{4.05}
 
 \node[hdr] at (\xbb, 2.66) {\textsc{backbone}};
 \node[hdr] at (\xhd, 2.66) {\textsc{head}};
@@ -26,10 +27,8 @@
 % #6 Kopf (leer = keiner) · #7 Output · #8 Randnotiz
 \newcommand{\methodrow}[8]{%
   \node[rowlab, text=#4!55!black] at (\xlab, #2) {#3};
-  \node[io] (i#1) at (\xin, #2) {segment};
   \node[bb, draw=#4!68!black, fill=#4!16] (b#1) at (\xbb, #2) {#5};
   \node[io] (o#1) at (\xout, #2) {#7};
-  \draw[edge] (i#1) -- (b#1);
   \ifthenelse{\equal{#6}{}}{%
     \draw[edge] (b#1) -- (o#1);
   }{%
@@ -59,6 +58,10 @@
 \methodrow{re}{-2.04}{SFTf-LR\\SFTf-ClsHead}{clrPCS}
   {the \textbf{G} generalist\\[-1pt]{\fontsize{5.9}{7.2}\selectfont\mdseries frozen}}
   {LR \emph{or} MLP}{class\\[-1.5pt]logits}{FTf-$\ast$ on encoders}
+
+\node[note, anchor=north, text width=10.5cm] at (0, -2.62)
+  {every row takes the same input --- one sponsored segment at the access levels the
+   voter is allowed to read};
 
 \end{tikzpicture}
 \end{document}

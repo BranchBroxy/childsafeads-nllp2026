@@ -2,26 +2,31 @@
 
 **Team Nürnberg NLP** · ChildSafeAds Shared Task @ [NLLP](https://nllpw.org/), EMNLP 2026 · Codabench account `broxy`
 
-An ensemble of error-independent voters. Every voter is one point in a grid spanned by three
-axes — **which model**, **which adaptation method**, **which class scope**. This report
-introduces the axes, then the ensemble, then what we submitted.
+Nine models vote on every instance. They are picked to be **structurally dissimilar** —
+different class scope, different training method, different backbone — on the assumption
+that models built differently fail differently, so a majority over them is more robust than
+any single one.
+
+**Sections 1–5** describe how a voter is built and how nine of them become a decision.
+**Section 6** lists what we submitted, **7** what those systems cost to run and **8** what
+each level of data access buys — the question the task is built around. **9** collects what
+went wrong and what our numbers cannot tell you; **10** states what this repository leaves
+out and why.
 
 No task data here; see [DATA.md](DATA.md) for licence and ethics terms.
 
 ### Contents
 
-| | |
-|---|---|
-| **[1 · Class scope](#1--class-scope)** | which labels a voter is trained on — generalist, specialist, minority-class specialist |
-| **[2 · Adaptation methods](#2--adaptation-methods)** | what is trained — generative, head on a tuned backbone, head on a frozen one, prompt only |
-| **[3 · Models and naming](#3--models-and-naming)** | the four backbones, and how to read a configuration's name |
-| **[4 · Cross-validation and branches](#4--cross-validation-and-branches)** | five channel-disjoint folds per configuration; the best three become a branch |
-| **[5 · The nine-voter ensemble](#5--the-nine-voter-ensemble)** | three dissimilar branches, plain strict majority, and the taxonomy rules on top |
-| **[6 · Submitted systems](#6--submitted-systems)** | what each submission contains, and the results table |
-| **[7 · What it costs to run](#7--what-it-costs-to-run)** | seconds per segment and GPU-hours per corpus, measured |
-| **[8 · What each data level buys](#8--what-each-data-level-buys)** | the level ladder read against collection cost — the task's central question |
-| **[9 · Negative results](#9--negative-results)** | a truncation bug we found by audit, and two things that did not work |
-| **[10 · Scope and ethics](#10--scope-and-ethics)** | what this repository deliberately does not contain |
+- **[1 · Class scope](#1--class-scope)** — which labels a voter is trained on: generalist, specialist, minority-class specialist
+- **[2 · Adaptation methods](#2--adaptation-methods)** — what is trained: generative, head on a tuned backbone, head on a frozen one, prompt only
+- **[3 · Models and naming](#3--models-and-naming)** — the four backbones, and how to read a configuration's name
+- **[4 · Cross-validation and branches](#4--cross-validation-and-branches)** — five channel-disjoint folds per configuration; the best three become a branch
+- **[5 · The nine-voter ensemble](#5--the-nine-voter-ensemble)** — three dissimilar branches, plain strict majority, and the taxonomy rules on top
+- **[6 · Submitted systems](#6--submitted-systems)** — what each submission contains, and the results table
+- **[7 · What it costs to run](#7--what-it-costs-to-run)** — seconds per segment and GPU-hours per corpus, measured
+- **[8 · What each data level buys](#8--what-each-data-level-buys)** — the level ladder read against collection cost
+- **[9 · Negative results and limits](#9--negative-results-and-limits)** — a truncation bug found by audit, two things that did not work, and what our numbers cannot settle
+- **[10 · Scope and ethics](#10--scope-and-ethics)** — what this repository deliberately does not contain
 
 ---
 
@@ -255,7 +260,7 @@ exact gaps are not settled. Re-running it is the first thing we will add here.*
 
 ---
 
-## 9 · Negative results
+## 9 · Negative results and limits
 
 - **Input truncation.** Our first wave silently cut **16.9 % of product pages** and 7.2 % of
   descriptions, with the truncation side differing between training and inference. Found by
@@ -264,6 +269,15 @@ exact gaps are not settled. Re-running it is the first thing we will add here.*
 - **Data augmentation did nothing.** Paired over 68 recipes: +0.007, inside noise. Dropped.
 - **Prompting has a ceiling well below training.** OPRO reached ST2 0.59 against 0.89, ST3
   0.53 against 0.67.
+
+What our numbers cannot settle:
+
+- **The development set is small and noisy.** Split in half and correlated across
+  configurations, its halves agree at *r* = 0.06 (ST1), 0.03 (ST2) and 0.37 (ST3). Differences
+  below roughly 0.03 there are noise, which is why we never select on it.
+- **An MCS on ST1 rests on few points.** After the majority classes are removed only about
+  31 validation instances per fold remain, so its ranking is unstable even where its score
+  looks high.
 
 ---
 

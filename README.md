@@ -87,8 +87,8 @@ Two things the naming hides:
 <p align="center"><img src="figures/voter-grid.png" width="100%"
   alt="Cross-validation grid over model, method, scope and access level"></p>
 
-*Each cell is one configuration's three-best-fold mean. TikZ sources in
-[`figures/src/`](figures/src); `bash figures/src/build.sh` rebuilds them.*
+*Each cell is one configuration's three-best-fold mean; grey is not trained, a yellow frame
+means fewer than five folds are finished and the number is provisional.*
 
 ---
 

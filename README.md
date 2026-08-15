@@ -112,6 +112,10 @@ therefore casts three votes.
 An **ensemble** is three branches — nine voters — deciding every instance by **plain strict
 majority** (> 50 % of votes cast).
 
+<p align="center"><img src="figures/fig-cv5.svg" width="100%"
+  alt="Cross-validation: five fold-models per configuration, each trained on four folds and
+  scored on the held-out fifth; the three best folds are deployed as one branch"></p>
+
 <p align="center"><img src="figures/fig-ensemble.svg" width="100%"
   alt="Nine-voter ensemble: three branches of three voters each, decided by plain strict majority"></p>
 

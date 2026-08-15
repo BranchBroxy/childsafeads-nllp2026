@@ -10,7 +10,7 @@
 # GermEval-2026-Paper, damit die Quellen dort ohne Neuzeichnen passen.
 set -euo pipefail
 cd "$(dirname "$0")"
-for f in fig-scopes fig-methods fig-ensemble; do
+for f in fig-scopes fig-methods fig-cv5 fig-ensemble; do
     pdflatex -interaction=nonstopmode -halt-on-error "$f.tex" >/dev/null
     pdftocairo -svg "$f.pdf" "../$f.svg"
     printf '  %-14s -> ../%s.svg  (%s)\n' "$f.tex" "$f" \

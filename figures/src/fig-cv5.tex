@@ -1,0 +1,79 @@
+\documentclass[border=3pt,tikz]{standalone}
+\input{preamble}
+\begin{document}
+\begin{tikzpicture}[
+  % Bildsprache aus der PsyDefDetect-Praesentation (BioNLP 2026): ein Voter ist
+  % ein Fold-Streifen — vier gefuellte Zellen sind seine Trainingsfolds, die
+  % hohle ist der Fold, auf dem er bewertet wird und der ihn benennt.
+  fold/.style={rectangle, draw=clrSFT!60!black, fill=clrSFT!25, line width=0.6pt},
+  voter/.style={rectangle, draw=clrSFT!60!black, fill=clrSFT!16, rounded corners=1.5pt,
+    line width=0.5pt, minimum width=1.30cm, minimum height=0.76cm},
+  drop/.style={rectangle, draw=black!35, fill=black!5, rounded corners=1.5pt,
+    line width=0.5pt, minimum width=1.30cm, minimum height=0.76cm},
+  % NICHT `cap` nennen — das kollidiert mit TikZ' eigenem line-cap-Schluessel.
+  capt/.style={font=\fontsize{6.2}{7.6}\selectfont\itshape, text=black!55, align=center},
+]
+
+% ── Datensatzleiste ────────────────────────────────────────────────────────
+\foreach \i in {0,...,4}{
+  \draw[fold] ({\i*1.30 - 3.25}, 3.05) rectangle ++(1.18, 0.44);
+  \node[font=\fontsize{6.5}{8}\selectfont\bfseries]
+    at ({\i*1.30 - 2.66}, 3.27) {f\i};
+}
+\node[capt] at (0, 2.80) {2{,}353 training instances --- five folds, split by channel};
+
+% ── fuenf Fold-Modelle ─────────────────────────────────────────────────────
+\node[hdr, anchor=east] at (-3.95, 1.62) {\textsc{train}};
+\foreach \i in {0,...,4}{
+  \node[voter] (m\i) at ({\i*1.30 - 2.60}, 1.62) {};
+  \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt]
+    at (m\i.north) {M\i};
+  \foreach \j in {0,...,4}{
+    \pgfmathsetmacro{\cx}{\i*1.30 - 2.60 - 0.52 + \j*0.21}
+    \ifnum\j=\i\relax
+      \draw[black!50, fill=white, line width=0.5pt] (\cx, 1.32) rectangle ++(0.16, 0.16);
+    \else
+      \draw[clrSFT!60!black, fill=clrSFT!60, line width=0.4pt]
+        (\cx, 1.32) rectangle ++(0.16, 0.16);
+    \fi
+  }
+}
+\node[capt, anchor=north] at (0, 1.10)
+  {each model trains on four folds and is scored on the fifth};
+
+% Legende
+\draw[clrSFT!60!black, fill=clrSFT!60, line width=0.4pt] (3.62, 1.78) rectangle ++(0.16, 0.16);
+\node[anchor=west, font=\fontsize{6}{7.5}\selectfont, text=black!70] at (3.86, 1.86)
+  {train fold};
+\draw[black!50, fill=white, line width=0.5pt] (3.62, 1.42) rectangle ++(0.16, 0.16);
+\node[anchor=west, font=\fontsize{6}{7.5}\selectfont, text=black!70] at (3.86, 1.50)
+  {held-out fold};
+
+% ── Auswahl der drei besten Folds ──────────────────────────────────────────
+\draw[edge] (0, 0.78) -- (0, 0.28);
+\node[hdr, anchor=east] at (-3.95, -0.28) {\textsc{deploy}};
+\foreach \i/\keep in {0/1, 1/0, 2/1, 3/0, 4/1}{
+  \ifnum\keep=1\relax
+    \node[voter] (d\i) at ({\i*1.30 - 2.60}, -0.28) {};
+    \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt]
+      at (d\i.north) {M\i};
+    \node[font=\fontsize{5.8}{7}\selectfont, anchor=south, inner sep=1.6pt,
+          text=clrSFT!35!black] at (d\i.south) {vote};
+  \else
+    \node[drop] (d\i) at ({\i*1.30 - 2.60}, -0.28) {};
+    \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt,
+          text=black!40] at (d\i.north) {M\i};
+    \node[font=\fontsize{5.8}{7}\selectfont, anchor=south, inner sep=1.6pt,
+          text=black!40] at (d\i.south) {dropped};
+  \fi
+}
+\node[capt, anchor=north] at (0, -0.86)
+  {keep the three folds this configuration scored best on};
+
+% ── Branch ─────────────────────────────────────────────────────────────────
+\draw[edge] (0, -1.22) -- (0, -1.72);
+\node[major, draw=clrEns!80!black, fill=clrEns!28, minimum width=5.6cm] at (0, -2.02)
+  {one branch \;=\; three votes};
+
+\end{tikzpicture}
+\end{document}

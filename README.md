@@ -78,9 +78,8 @@ model families.
 Two things are worth spelling out because the naming hides them:
 
 - **The `f` in `SFTf` / `FTf` means "frozen generalist".** These heads always sit on a **G**
-  backbone; the scope in a voter's name refers to the **head**, not the backbone. So
-  `phi4-SFTf-LR-MCS-st3` is a minority-class logistic regression on a frozen Phi-4
-  generalist.
+  backbone; the scope in a voter's name refers to the **head**, not the backbone. A minority-class logistic regression on a frozen Phi-4 generalist is therefore a
+  Phi-4 model in name only — what was trained is the head.
 - **A logistic-regression head is fitted per label independently.** As a consequence a
   `…-LR-G` and a `…-LR-S-stX` voter produce, for that subtask, *the same classifier*. We
   measured it: identical on 50 of 50 folds for `FTf-LR`. They must never be used as two
@@ -141,44 +140,39 @@ needs no threshold.
 
 ---
 
-## 4 · Submission 1 — SFT × SFTf × FT on two models
+## 4 · The submitted system
 
 The scope assignment is fixed to **SFT = G, SFTf = MCS, FT = S**, and each slot takes its
-best configuration by cross-validation — under the constraint that the whole system uses
+best configuration by cross-validation — under the constraint that the whole system runs on
 **one decoder and one encoder**. Without that constraint the ensemble would need a second
 decoder in memory and the frozen-generalist branch would stop being cheap.
 
-| | **G** — SFT | **S** — FT | **MCS** — SFTf |
+| | **G** — generalist | **S** — specialist | **MCS** — minority-class |
 |---|---|---|---|
-| **ST1** | `phi4` folds 2,4,0 | `ettin-1b` folds 2,4,1 | `phi4`-LR folds 4,3,0 |
-| **ST2** | `phi4` folds 4,2,1 | `ettin-1b` folds 4,1,0 | `phi4`-LR folds 3,2,1 |
-| **ST3** | `phi4` folds 0,2,1 | `ettin-1b` folds 4,2,1 | `phi4`-LR folds 3,2,0 |
+| method | generative SFT | fully fine-tuned encoder | frozen generalist + LR head |
+| backbone | Phi-4 | ettin-encoder-1b | Phi-4 (frozen) |
 
-Two backbones carry all 27 fold-models: **Phi-4** for the generative and the frozen-head
-branch, **ettin-encoder-1b** for the specialist. The adapters are small and hot-swappable on
-a loaded base, so the memory cost is two models, not nine.
+Two backbones carry all 27 fold-models. The adapters are small and hot-swappable on a
+loaded base, so the memory cost is two models, not nine.
 
-Eight of the nine voters read L1234; the ST1 minority specialist reads the **transcript
-alone** and still earns its slot — the one place in the system where the cheapest data level
-wins. The declared access level is the highest one used: **1–4**.
+Eight of the nine voters read L1234. The exception is the ST1 minority specialist, which
+reads the **transcript alone** and still earns its slot — the one place in the system where
+the cheapest data level wins. The declared access level is the highest one used: **1–4**.
 
 | | mean | ST1 | ST2 | ST3 |
 |---|---|---|---|---|
-| out-of-fold (train, 2,353 instances) | 0.6090 | 0.4139 | 0.8143 | 0.5988 |
 | **development set** (504 instances) | **0.7683** | 0.8630 | 0.7585 | 0.6835 |
 | test set (503 instances) | *pending* | | | |
 
-The two internal numbers are on different scales. Out-of-fold, an instance is voted on only
-by the branches whose deployed folds contain its held-out fold — **one to three votes**. On
-dev, all nine fold-models vote on every instance, which is also the situation at test time.
-Only the dev number is comparable to a leaderboard.
-
 **Training data.** Every voter is trained on the training split alone (2,353 instances,
-channel-disjoint five-fold CV). The development set is not in any voter's training data,
-which is what makes the dev row above a transfer check rather than a restatement. Dev was
-also never used for selection (§5); it is read once, after the composition is frozen.
+channel-disjoint five-fold CV). The development set is in no voter's training data, which
+is what makes the dev row a transfer check rather than a restatement. Dev was also never
+used for selection (§5); it is read once, after the composition is frozen.
 
-Further systems will be added here as we submit them.
+A second system refits the same recipe on train + dev. It cannot be checked on dev by
+construction — dev is training data for it — which is precisely why it is worth submitting
+separately: the comparison of the two on the test set is the only way to answer whether the
+refit transfers.
 
 ---
 

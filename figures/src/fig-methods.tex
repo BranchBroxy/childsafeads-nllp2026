@@ -8,7 +8,7 @@
   % (ein Segment) und hat den Pfeil zum Backbone nur eingeklemmt.
   rowlab/.style={font=\fontsize{6.9}{8.2}\selectfont\bfseries, anchor=east,
     align=right},
-  bb/.append style={text width=3.15cm, minimum width=3.35cm, minimum height=0.80cm},
+  bb/.append style={text width=3.15cm, minimum width=3.35cm, minimum height=0.92cm},
   io/.append style={text width=1.15cm, minimum width=1.35cm, minimum height=0.68cm},
   lab/.append style={text width=1.55cm, minimum width=1.75cm, minimum height=0.52cm},
 ]
@@ -52,11 +52,11 @@
   {classifier}{class\\[-1.5pt]logits}{QLoRA head; encoders full}
 
 \methodrow{rd}{-1.02}{Base-LR\\Base-ClsHead}{clrBase}
-  {base LLM \emph{or} encoder\\[-1pt]{\fontsize{5.9}{7.2}\selectfont\mdseries frozen, untrained}}
+  {base (untrained) LLM\\[-2pt]\emph{or} encoder\\[-1pt]{\fontsize{5.9}{7.2}\selectfont\mdseries frozen}}
   {LR \emph{or} MLP}{class\\[-1.5pt]logits}{embeddings cached once}
 
 \methodrow{re}{-2.04}{SFTf-LR\\SFTf-ClsHead}{clrPCS}
-  {the \textbf{G} generalist\\[-1pt]{\fontsize{5.9}{7.2}\selectfont\mdseries frozen}}
+  {the \textbf{G} model trained\\[-2pt]by SFT or FT above\\[-1pt]{\fontsize{5.9}{7.2}\selectfont\mdseries now frozen}}
   {LR \emph{or} MLP}{class\\[-1.5pt]logits}{FTf-$\ast$ on encoders}
 
 \node[note, anchor=north, text width=10.5cm] at (0, -2.62)

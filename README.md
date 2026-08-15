@@ -105,10 +105,17 @@ Every configuration is trained **five times**. The training split is cut into fi
 and disclosure habits, so a random split leaks all of it. Each run trains on four folds and
 is scored on the fifth, which it never saw and which names it.
 
-A **voter** is one such fold-model. The **mean of a configuration's three best folds** is
-its selection signal, and those same three folds are what gets deployed; the weaker two are
-dropped as correlated noise. Those three voters together are a **branch**, and a branch
-casts three votes.
+A **voter** is one such fold-model, and its score on its own held-out fold is its
+$F1_{cv}$ — the only honest number we have for it, since nothing else it was trained on can
+be used to judge it.
+
+Ranking a configuration's five folds by $F1_{cv}$ and keeping the **top three** does two
+things at once. The **mean of those three** becomes the configuration's selection signal,
+so configurations compete on where they are strong rather than on an average dragged down
+by one hard fold. And exactly those three fold-models are what gets deployed: the weaker
+two were trained on the same recipe and would add correlated noise rather than an
+independent opinion. Those three voters together are a **branch**, and a branch casts three
+votes.
 
 <p align="center"><img src="figures/fig-cv5.svg" width="100%"
   alt="Cross-validation: five fold-models per configuration, each trained on four folds and

@@ -16,20 +16,20 @@
 
 % ── Datensatzleiste ────────────────────────────────────────────────────────
 \foreach \i in {0,...,4}{
-  \draw[fold] ({\i*1.30 - 3.25}, 3.62) rectangle ++(1.18, 0.44);
+  \draw[fold] ({\i*1.52 - 3.42}, 3.62) rectangle ++(1.18, 0.44);
   \node[font=\fontsize{6.5}{8}\selectfont\bfseries]
-    at ({\i*1.30 - 2.66}, 3.84) {f\i};
+    at ({\i*1.52 - 2.83}, 3.84) {f\i};
 }
 \node[capt, anchor=north] at (0, 3.44) {2{,}353 training instances --- five folds, split by channel};
 
 % ── fuenf Fold-Modelle ─────────────────────────────────────────────────────
-\node[hdr, anchor=east] at (-3.95, 2.05) {\textsc{train}};
+\node[hdr, anchor=east] at (-4.35, 2.05) {\textsc{train}};
 \foreach \i in {0,...,4}{
-  \node[voter] (m\i) at ({\i*1.30 - 2.60}, 2.05) {};
+  \node[voter] (m\i) at ({\i*1.52 - 3.04}, 2.05) {};
   \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt]
     at (m\i.north) {M\i};
   \foreach \j in {0,...,4}{
-    \pgfmathsetmacro{\cx}{\i*1.30 - 2.60 - 0.52 + \j*0.21}
+    \pgfmathsetmacro{\cx}{\i*1.52 - 3.04 - 0.52 + \j*0.21}
     \ifnum\j=\i\relax
       \draw[black!50, fill=white, line width=0.5pt] (\cx, 1.75) rectangle ++(0.16, 0.16);
     \else
@@ -42,25 +42,25 @@
   {each model trains on four folds and is scored on the fifth};
 
 % Legende
-\draw[clrSFT!60!black, fill=clrSFT!60, line width=0.4pt] (3.62, 2.21) rectangle ++(0.16, 0.16);
-\node[anchor=west, font=\fontsize{6}{7.5}\selectfont, text=black!70] at (3.86, 2.29)
+\draw[clrSFT!60!black, fill=clrSFT!60, line width=0.4pt] (4.05, 2.21) rectangle ++(0.16, 0.16);
+\node[anchor=west, font=\fontsize{6}{7.5}\selectfont, text=black!70] at (4.29, 2.29)
   {train fold};
-\draw[black!50, fill=white, line width=0.5pt] (3.62, 1.85) rectangle ++(0.16, 0.16);
-\node[anchor=west, font=\fontsize{6}{7.5}\selectfont, text=black!70] at (3.86, 1.93)
+\draw[black!50, fill=white, line width=0.5pt] (4.05, 1.85) rectangle ++(0.16, 0.16);
+\node[anchor=west, font=\fontsize{6}{7.5}\selectfont, text=black!70] at (4.29, 1.93)
   {held-out fold};
 
 % ── Auswahl der drei besten Folds ──────────────────────────────────────────
 \draw[edge] (0, 1.12) -- (0, 0.52);
-\node[hdr, anchor=east] at (-3.95, 0.10) {\textsc{deploy}};
+\node[hdr, anchor=east] at (-4.35, 0.10) {\textsc{deploy}};
 \foreach \i/\keep in {0/1, 1/0, 2/1, 3/0, 4/1}{
   \ifnum\keep=1\relax
-    \node[voter] (d\i) at ({\i*1.30 - 2.60}, 0.10) {};
+    \node[voter] (d\i) at ({\i*1.52 - 3.04}, 0.10) {};
     \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt]
       at (d\i.north) {M\i};
     \node[font=\fontsize{5.8}{7}\selectfont, anchor=south, inner sep=1.6pt,
           text=clrSFT!35!black] at (d\i.south) {vote};
   \else
-    \node[drop] (d\i) at ({\i*1.30 - 2.60}, 0.10) {};
+    \node[drop] (d\i) at ({\i*1.52 - 3.04}, 0.10) {};
     \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt,
           text=black!40] at (d\i.north) {M\i};
     \node[font=\fontsize{5.8}{7}\selectfont, anchor=south, inner sep=1.6pt,

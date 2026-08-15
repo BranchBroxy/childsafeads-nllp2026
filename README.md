@@ -115,9 +115,9 @@ Every point in the grid is one **configuration**, and its name states the three 
 the data it may read:
 
 ```
-        phi4  -  SFTf-LR  -  MCS-st3  -  L1234  -ft
-        ────     ───────     ───────     ─────  ───
-        model    method      scope       levels  full text, no truncation
+        phi4  -  SFTf-LR  -  MCS-st3  -  L1234
+        ────     ───────     ───────     ─────
+        model    method      scope       levels
 ```
 
 - **model** — the backbone, from the table above.
@@ -236,37 +236,40 @@ as a transfer check, never as a selection criterion. Submission 1 reaches **0.76
 
 ## 7 · What it costs to run
 
-A submission run produces labels for the 503 test instances, and the ensemble does that
-once per branch and fold. We measured one pass of each branch type and normalised to
-seconds per instance, because the three runs cover different numbers of instances.
+A submission run takes the segment text at the levels a voter may read and produces its
+labels. We timed one pass of each branch type and normalised to seconds per instance **per
+subtask**, since a generalist answers all three subtasks in one call while the specialists
+answer one.
 
-| Branch | what one pass does | **per instance** |
+| Branch | one pass | **s / instance / subtask** |
 |---|---|---|
-| **G** — generative | Phi-4 decodes the label as text | **3.02 s** |
-| **S** — encoder | one forward through ettin-1b | 0.29 s |
-| **MCS** — frozen head | one forward through frozen Phi-4, then a logistic regression | 0.19 s |
+| **G** — Phi-4, generative | decodes the label as text | **1.01** |
+| **S** — ettin-1b, fine-tuned | one encoder forward | 0.29 |
+| **MCS** — Phi-4, frozen | one decoder forward, then a logistic regression | 0.19 |
 
-The generative branch is **sixteen times** more expensive per instance than a frozen head on
-the same backbone — autoregressive decoding against a single forward pass. That, not model
-size, is what dominates the bill.
+Decoding is what costs: the generative branch is **five times** a frozen forward on the same
+backbone and three times a full encoder pass, despite the encoder being fine-tuned and the
+frozen decoder being fourteen times its size.
 
-Rolled up for one submission over the 503 test instances:
+### ST1, one submission run over 503 test instances
 
-| | one voter | one branch (3 folds) |
-|---|---|---|
-| G | 25.3 min | 76.0 min |
-| S | 2.4 min | 7.2 min |
-| MCS | 1.6 min | 4.7 min |
-| **one subtask** (three branches, nine voters) | | **88 min** |
-| **whole system** (three subtasks) | | **≈ 4.4 h** |
+| Branch | configuration | one voter | branch (3 folds) |
+|---|---|---|---|
+| **G** | Phi-4 · SFT · L1234 | 8.4 min | 25.3 min |
+| **S** | ettin-1b · FT · L1234 | 2.4 min | 7.2 min |
+| **MCS** | Phi-4 frozen + LR · L1 | 1.6 min | 4.7 min |
+| | | **nine voters** | **37.2 min** |
 
-Scaled to all 3,360 instances, which is what the submission form asks for: **≈ 29
-GPU-hours**, of which 25 sit in the generative branch. Training the search grid cost far
-more; this figure is inference only.
+ST2 and ST3 use the same three configurations and cost the same, except that their minority
+branch reads L1234 rather than L1 — a longer input, so the 1.6 min above is the floor rather
+than the average.
 
-Measured on single A100-SXM4 and H200 cards, 4-bit quantised backbones, batch sizes from
-`get_vram_batch_config`. Figures are indicative rather than a benchmark: they include model
-loading and were taken on a shared cluster.
+**Whole system:** three subtasks × 37.2 min ≈ **1.9 h** for a submission. Scaled to all
+3,360 instances, which is what the submission form asks for: **≈ 12 GPU-hours**, of which 9
+are the generative branch. Training the search grid cost far more; this is inference only.
+
+Measured on single A100-SXM4 and H200 cards with 4-bit backbones. The figures include model
+loading and were taken on a shared cluster, so they are indicative rather than a benchmark.
 
 ---
 

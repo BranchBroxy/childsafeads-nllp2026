@@ -1,0 +1,11 @@
+# Es gehoeren keine Daten in dieses Repo — siehe DATA.md
+data/
+predictions/
+experiments/
+submissions/
+*.jsonl
+*.zip
+*.safetensors
+__pycache__/
+*.py[cod]
+.DS_Store

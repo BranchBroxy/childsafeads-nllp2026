@@ -16,9 +16,9 @@
 
 % ── Datensatzleiste ────────────────────────────────────────────────────────
 \foreach \i in {0,...,4}{
-  \draw[fold] ({\i*1.52 - 3.42}, 3.62) rectangle ++(1.18, 0.44);
+  \draw[fold] ({\i*1.52 - 3.69}, 3.62) rectangle ++(1.30, 0.44);
   \node[font=\fontsize{6.5}{8}\selectfont\bfseries]
-    at ({\i*1.52 - 2.83}, 3.84) {f\i};
+    at ({\i*1.52 - 3.04}, 3.84) {f\i};
 }
 \node[capt, anchor=north] at (0, 3.44) {2{,}353 training instances --- five folds, split by channel};
 
@@ -50,7 +50,7 @@
   {held-out fold};
 
 % ── Auswahl der drei besten Folds ──────────────────────────────────────────
-\draw[edge] (0, 1.12) -- (0, 0.52);
+\draw[edge, line width=0.7pt] (0, 1.18) -- (0, 0.54);
 \node[hdr, anchor=east] at (-4.35, 0.10) {\textsc{deploy}};
 \foreach \i/\keep in {0/1, 1/0, 2/1, 3/0, 4/1}{
   \ifnum\keep=1\relax
@@ -71,8 +71,8 @@
   {keep the three folds this configuration scored best on};
 
 % ── Branch ─────────────────────────────────────────────────────────────────
-\draw[edge] (0, -0.90) -- (0, -1.50);
-\node[major, draw=clrCls!75!black, fill=clrCls!22, minimum width=5.6cm] at (0, -1.83)
+\draw[edge, line width=0.7pt] (0, -0.84) -- (0, -1.48);
+\node[major, draw=clrBranch!80!black, fill=clrBranch!20, minimum width=5.6cm] at (0, -1.83)
   {one branch \;=\; three votes};
 
 \end{tikzpicture}

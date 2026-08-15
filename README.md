@@ -236,41 +236,33 @@ as a transfer check, never as a selection criterion. Submission 1 reaches **0.76
 
 ## 7 · What it costs to run
 
-The question a monitoring operator asks is not what a corpus costs but what **one segment**
-costs. We timed one pass of each branch type and divided by the instances it covered.
+The question an operator asks is what **one segment** costs. We timed one pass of each
+branch type and divided by the instances it covered.
 
-| Branch | what it does for one segment | **seconds** |
+| Branch | one segment, one subtask |
+|---|---|
+| **G** — Phi-4, decodes the label as text | **1.01 s** |
+| **S** — ettin-1b, one encoder forward | 0.29 s |
+| **MCS** — Phi-4 frozen, one forward + logistic regression | 0.19 s |
+
+Decoding is what costs: the generative branch is five times a frozen forward on the same
+backbone and three times a full encoder pass, though the encoder is fine-tuned and the
+frozen decoder fourteen times its size. Model size predicts none of this; the
+autoregressive loop does.
+
+A branch runs three fold-models, a subtask runs three branches, and the system runs three
+subtasks — 27 passes on two loaded backbones.
+
+| Submission | per segment | all 3,360 |
 |---|---|---|
-| **G** — Phi-4, generative | decodes the label as text | **1.01** |
-| **S** — ettin-1b, fine-tuned | one encoder forward | 0.29 |
-| **MCS** — Phi-4, frozen | one decoder forward, then a logistic regression | 0.19 |
+| 1 | **13.3 s** | 12.4 GPU-h |
+| 2 | *pending* | |
+| 3–5 | | |
 
-Decoding is what costs. The generative branch is **five times** a frozen forward on the same
-backbone and three times a full pass through the encoder — even though the encoder is
-fine-tuned and the frozen decoder is fourteen times its size. Nothing about model size
-predicts this; the autoregressive loop does.
-
-### One segment, end to end
-
-Each branch runs its three fold-models, and each subtask runs three branches:
-
-| | one voter | one branch (3 folds) | per subtask |
-|---|---|---|---|
-| **G** | 1.01 s | 3.02 s | |
-| **S** | 0.29 s | 0.86 s | |
-| **MCS** | 0.19 s | 0.56 s | |
-| | | | **4.4 s** |
-
-**All three subtasks: ≈ 13 seconds per segment**, 27 passes on two loaded backbones. Over
-the full corpus of 3,360 that is **≈ 12 GPU-hours**, which is what the submission form asks
-for; a submission run over the 503 test instances takes about 1.9 hours.
-
-These are throughput figures from batched runs on single A100-SXM4 and H200 cards, with
-model loading amortised over the whole pass. A genuine cold start on a single segment is
-dominated by loading the two backbones, which takes minutes; a warm system processing one
-segment at a time loses the batching advantage, so 13 seconds is a floor rather than a
-promise. Training the search grid cost far more than any of this; the figures are inference
-only.
+Throughput from batched runs on single A100-SXM4 and H200 cards, model loading amortised
+over the pass. A cold start on one segment is dominated by loading the two backbones
+(minutes), and a warm system handling one segment at a time loses the batching advantage —
+13 seconds is a floor, not a promise. Inference only; training the grid cost far more.
 
 ---
 

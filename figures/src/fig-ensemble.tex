@@ -10,8 +10,8 @@
 \def\ybox{1.05}    % Mitte der Branch-Box
 \def\ybus{0.28}    % Verteiler unter der Box
 \def\ychip{-0.20}  % Mitte der Voter-Chips
-\def\ycol{-1.06}   % Sammelschiene
-\def\yens{-1.66}   % Mehrheitsbalken
+\def\ycol{-1.16}   % Sammelschiene
+\def\yens{-1.76}   % Mehrheitsbalken
 
 \def\cA{-3.90}
 \def\cB{0}
@@ -20,7 +20,7 @@
 
 \begin{scope}[on background layer]
   \draw[draw=black!38, dashed, rounded corners=8pt, line width=0.9pt,
-        fill=black!2] (-5.85, 1.86) rectangle (5.85, -2.18);
+        fill=black!2] (-5.85, 1.86) rectangle (5.85, -2.28);
 \end{scope}
 \node[hdr, anchor=west] at (-5.65, 1.66)
   {\textsc{one subtask: three branches, three voters each}};
@@ -47,12 +47,12 @@
     % Jeder Voter behaelt seinen eigenen Abgang bis auf die Sammelschiene — es
     % sind neun Stimmen. Die Abgaenge beginnen UNTER der Klammer, damit sie sie
     % nicht durchschneiden.
-    \draw[bus]  ({\xc+\dx}, {\ychip-0.34}) -- ({\xc+\dx}, \ycol);
+    \draw[bus]  ({\xc+\dx}, {\ychip-0.76}) -- ({\xc+\dx}, \ycol);
   }
   \draw[decorate, decoration={brace, amplitude=3pt, mirror, raise=1.4pt},
         \clr!55!black, line width=0.55pt]
         ({\xc-\dchip-0.43}, {\ychip-0.19}) -- ({\xc+\dchip+0.43}, {\ychip-0.19});
-  \node[fill=black!2, inner sep=1.6pt, font=\fontsize{6.2}{7.6}\selectfont\itshape,
+  \node[inner sep=1.6pt, font=\fontsize{6.2}{7.6}\selectfont\itshape,
         text=\clr!35!black] at (\xc, {\ychip-0.58}) {one branch};
 }
 \draw[bus] ({\cA-\dchip}, \ycol) -- ({\cC+\dchip}, \ycol);

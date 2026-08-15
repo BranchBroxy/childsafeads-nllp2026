@@ -2,170 +2,298 @@
 
 **Team Nürnberg NLP** · ChildSafeAds Shared Task @ [NLLP](https://nllpw.org/), EMNLP 2026 · Codabench account `broxy`
 
-This repository is the system design report for our submission to the ChildSafeAds
-shared task on commercial content in child-facing YouTube videos. It documents how the
-system is built, how it was selected, and what each level of data access actually bought
-us — the question the organisers put at the centre of the task.
+Our system is an ensemble of error-independent voters, built on the design we used for
+GermEval 2026 and PsyDefDetect. Every voter is one point in a grid spanned by three axes:
+**which model**, **which adaptation method**, and **which class scope** it trains on. This
+report introduces the three axes first, then the ensemble that assembles them, then the
+concrete system we submitted.
 
-It contains **no task data**. See [DATA.md](DATA.md) for why, and for the licence and
-ethics commitments we work under.
+It contains **no task data** — see [DATA.md](DATA.md) for the licence and ethics terms.
 
 ---
 
-## 1 · What the system is
+## 1 · Class scope: what a voter is allowed to learn
 
-For each subtask, nine fold-models vote by plain majority. The nine come from **three
-deliberately dissimilar branches**, each contributing the three folds on which it scored
-best in cross-validation:
+The scope axis decides **which training data a voter sees**. It carries the main idea of
+the system: three scopes, three different strengths, three different failure modes.
 
-| Branch | What it is | Scope in the submitted system |
+```mermaid
+flowchart LR
+  subgraph G["Generalist (G)"]
+    direction TB
+    G1["trains jointly on<br/>ST1 + ST2 + ST3"] --> G2["one model,<br/>subtask chosen by prompt"]
+  end
+  subgraph S["Specialist (S)"]
+    direction TB
+    S1["trains on<br/>one subtask only"] --> S2["one model per subtask,<br/>full label set"]
+  end
+  subgraph M["Minority-Class Specialist (MCS)"]
+    direction TB
+    M1["trains on one subtask<br/>without its majority labels"] --> M2["one model per subtask,<br/>rare labels only"]
+  end
+```
+
+**Generalist (G).** Trains jointly on all three subtasks in a multi-task setup. The shared
+signal is meant to build broad domain knowledge — patterns common to the subtasks that no
+single one provides alone. Evaluation runs one subtask at a time, so the generalist carries
+a subtask switch: the prepended prompt selects the subtask at inference.
+
+**Specialist (S).** Trains only on the data of a single subtask. The narrowed signal fits
+that subtask's label set more tightly. In practice it performs on a par with the
+generalist; what it mainly contributes is a **different error profile** the vote can use.
+
+**Minority-class specialist (MCS).** A specialist trained without the majority labels.
+The rule: sort a subtask's labels by frequency and remove the most frequent ones **until
+the removed set exceeds 50 % of the mass**. What remains is what the MCS trains on.
+
+| Subtask | removed (cumulative share) | MCS trains on |
 |---|---|---|
-| **SFT** | decoder, instruction-tuned generatively with QLoRA | **G** — one generalist covering all three subtasks |
-| **SFTf** | the *same* decoder, frozen, with a light classification head | **MCS** — trained only on the subtask's minority classes |
-| **FT** | encoder, fully fine-tuned | **S** — one specialist per subtask |
+| **ST1** | `physical_goods` 47 % + `digital_content_or_services` 46 % = **93 %** | `physical_services`, `none`, `other` |
+| **ST2** | `apps` 29 % + `hardware_electronics` 22 % = **51 %** | the remaining 10 categories |
+| **ST3** | `misleading_claim` 54 % | the remaining 7 flags |
 
-The branches are anti-correlated by construction: a generative decoder, a linear head on
-frozen decoder states, and a discriminatively fine-tuned encoder fail in different ways.
-That is the point — a majority vote only helps when its members are not copies of each
-other.
+Because ST1 is single-label, removing a label removes its **instances** from training and
+validation. ST2 and ST3 are multi-label, so only the **label columns** are dropped and the
+instances stay.
 
-Backbones: [Ministral-8B](https://huggingface.co/mistralai/Ministral-8B-Instruct-2410),
-[Phi-4 (14B)](https://huggingface.co/microsoft/phi-4),
-[ettin-encoder-1b](https://huggingface.co/jhu-clsp/ettin-encoder-1b). All open weights.
+Removing the dominant classes is meant to shift the model's errors elsewhere and free its
+capacity for the fine distinctions between the rare classes — the ones a compliance
+monitor actually cares about and where macro-F1 is won.
 
-**Voting rules.** Plain strict majority (> 50 % of votes cast). ST1 breaks ties toward the
-majority class and never predicts `other` (0.07 % of the corpus — predicting it costs
-twice under a macro-F1 that averages over *occurring* labels). ST2 is never empty. ST3
-enforces the taxonomy: `no_flag` and `insufficient_context` are exclusive against any real
-flag, and `undisclosed_advertising` / `inadequate_disclosure` are mutually exclusive. The
-official checker does not test the last two constraints; ours does.
-
-**Runtime cost.** Because the SFT and SFTf branches share a decoder backbone, the ensemble
-needs two decoder models and one encoder in memory rather than nine independent models.
-Adapters are small and hot-swappable on a loaded base.
+> **Reading MCS scores.** An MCS is scored only on its own labels, so its cross-validation
+> number sits on a different scale and must never be compared directly against a G or S
+> branch. On ST1 in particular, a full-label evaluation of an MCS is meaningless: it can
+> never hit the two classes covering 93 % of instances.
 
 ---
 
-## 2 · What each data level buys
+## 2 · Adaptation methods: how a voter is trained
 
-The task ships four cumulative access levels ordered by collection cost: the segment
-transcript (L1), video metadata including YouTube's paid-promotion flag (L2), channel
-context (L3), and the crawled product page (L4). We trained the full ladder and measured
-each rung on the development set, using the best nine-voter system we could build under
-each cap:
+The method axis decides **what is trained**. These are the columns of our search grid.
+They are **functional positions**, not method names: what does the same thing on a decoder
+and on an encoder sits in the same column, which is what makes the grid comparable across
+model families.
 
-| System | mean macro-F1 | ST1 | ST2 | ST3 | Δ over previous rung |
-|---|---|---|---|---|---|
-| L1 — transcript only | 0.6103 | 0.6492 | 0.6013 | 0.5805 | — |
-| ≤ L12 | 0.7292 | 0.7966 | 0.7214 | 0.6696 | **+0.119** |
-| ≤ L123 | 0.7348 | 0.8181 | 0.7092 | 0.6770 | +0.006 |
-| ≤ L1234 | **0.7675** | 0.8459 | 0.7795 | 0.6770 | +0.033 |
+```mermaid
+flowchart TB
+  B["backbone LLM"]
+  B --> P["<b>OPRO</b> — prompt only<br/>nothing trained"]
+  B --> SFT["<b>SFT</b> — generative<br/>backbone tuned (QLoRA), emits the label as text"]
+  B --> CH["<b>ClsHead</b> / <b>FT</b> — discriminative<br/>backbone tuned + classification head"]
+  B --> BF["backbone <b>frozen</b>"]
+  BF --> BLR["<b>Base-LR</b> — logistic regression on raw embeddings"]
+  BF --> BCH["<b>Base-ClsHead</b> — MLP head on raw embeddings"]
+  G["the trained <b>G</b> generalist, frozen"]
+  CH -.-> G
+  SFT -.-> G
+  G --> FLR["<b>SFTf-LR</b> / <b>FTf-LR</b> — logistic regression on generalist embeddings"]
+  G --> FCH["<b>SFTf-ClsHead</b> / <b>FTf-ClsHead</b> — MLP head on generalist embeddings"]
+```
 
-Read against the token cost of each level (median added tokens per instance: L2 ≈ 290,
-L3 ≈ 7, L4 ≈ 375), three findings stand out:
+| Column | Decoder | Encoder | What it is |
+|---|---|---|---|
+| generative | `SFT` | — | The model is fine-tuned to **emit the label as text** from a task prompt containing the full category definitions. Encoders do not generate, so this column is structurally empty for them. |
+| trained + heads | `ClsHead` | `FT` | Decoder: a two-layer head on the last-token hidden state of the QLoRA-adapted model, trained with focal loss and inverse-frequency class weights. Encoder: **full** fine-tuning with heads. Same function, different mechanics. |
+| frozen base + head | `Base-LR` | `Base-LR` | The **untrained** backbone is frozen, its embeddings cached once, and a logistic regression fitted on them. The cheapest voter in the pool. |
+| | `Base-ClsHead` | `Base-ClsHead` | Same cached embeddings, MLP head instead of logistic regression. |
+| frozen generalist + head | `SFTf-LR` | `FTf-LR` | The **trained G generalist** is frozen and a logistic regression fitted on its embeddings. It inherits the generalist's domain knowledge without a second training run. |
+| | `SFTf-ClsHead` | `FTf-ClsHead` | Same, MLP head. |
+| prompted | `OPRO` | — | Prompt optimised by OPRO, no training. The bar the trained methods have to clear. |
 
-- **Level 2 is the whole game.** Roughly 290 extra tokens — title, description, and the
-  platform's own paid-promotion flag — buy +0.119. Nothing else comes close.
-- **Level 3 is free and worthless.** The channel name costs about seven tokens and moves
-  the mean by +0.006, inside our noise band. A monitoring system can skip it.
-- **Level 4 pays only on ST1 and ST2.** The product page tells you what is being sold and
-  in which category. It does not help with compliance flags: **ST3 is saturated at L12** —
-  our best ST3 branch uses no product page at all.
+Two things are worth spelling out because the naming hides them:
 
-For an authority weighing crawl cost against accuracy, that is the practical shape of the
-trade-off: fetch video metadata always, skip channel context, and fetch product pages only
-if commercial type and product category matter to you.
+- **The `f` in `SFTf` / `FTf` means "frozen generalist".** These heads always sit on a **G**
+  backbone; the scope in a voter's name refers to the **head**, not the backbone. So
+  `phi4-SFTf-LR-MCS-st3` is a minority-class logistic regression on a frozen Phi-4
+  generalist.
+- **A logistic-regression head is fitted per label independently.** As a consequence a
+  `…-LR-G` and a `…-LR-S-stX` voter produce, for that subtask, *the same classifier*. We
+  measured it: identical on 50 of 50 folds for `FTf-LR`. They must never be used as two
+  branches of one ensemble — that would be fake diversity.
 
-One caveat we want on the record: our L1 systems were trained before we fixed an input
-truncation bug (§4), so the bottom rung of this ladder is pessimistic. The gap between L1
-and L12 is real but its exact size is not settled.
+Each cell of the resulting grid is one configuration. This is what the search space looks
+like once trained:
+
+![Cross-validation grid over model × method × scope × level](figures/voter-grid.png)
 
 ---
 
-## 3 · How branches were selected — and why not on dev
+## 3 · The nine-voter ensemble
 
-The selection procedure is the part we would defend hardest.
+Three terms build the system from a single vote up.
 
-**Cross-validation is channel-disjoint.** Five folds are built over the training set only,
-grouped by channel, with an assertion that no channel appears in two folds. Sponsored
-segments from one creator share vocabulary, product mix, and disclosure habits; a random
-split leaks all of it and flatters every number.
+A **voter** is one model, trained in one method on one class scope, on four of five folds
+and evaluated on the held-out fifth that names it.
 
-**Selection uses only cross-validation.** For every configuration we take the mean of its
-three best folds; per subtask we then take the best G, the best MCS, and the best S branch.
-The development set is never consulted during selection.
+A **branch** is three voters sharing model, method and scope, differing only in which fold
+each held out — **the three folds on which that configuration scored highest**. A branch
+therefore casts three votes.
 
-That last rule was not a matter of taste. We measured the reliability of the development
-set by splitting it in half and correlating the two halves across configurations:
+An **ensemble** is three branches — nine voters — deciding every instance by **plain strict
+majority** (> 50 % of votes cast).
+
+```mermaid
+flowchart LR
+  A["branch 1<br/>SFT · G"] --> V["9 votes<br/>plain majority"]
+  B["branch 2<br/>SFTf · MCS"] --> V
+  C["branch 3<br/>FT · S"] --> V
+  V --> O["subtask prediction"]
+```
+
+**Cross-validation.** Five folds over the training set, grouped by **channel**, with an
+assertion that no channel appears in two folds. Sponsored segments from one creator share
+vocabulary, product mix and disclosure habits; a random split leaks all of it. Each
+configuration is trained five times, giving five per-fold macro-F1 scores; the **mean of
+the three best** is its selection signal and names the three voters it deploys.
+
+**Fold coverage.** The three fold sets are chosen so that **all five folds appear across
+the nine voters**. No slice of the training data goes unused, and the out-of-fold estimate
+covers every training instance rather than a convenient subset.
+
+**Voting rules.** ST1 breaks ties toward the majority class and never predicts `other`
+(0.07 % of the corpus — under a macro-F1 that averages over *occurring* labels, predicting
+an absent class costs twice). ST2 is never empty. ST3 enforces the taxonomy: `no_flag` and
+`insufficient_context` are exclusive against any real flag, and `undisclosed_advertising` /
+`inadequate_disclosure` are mutually exclusive. The official checker does not test the last
+two constraints; ours does.
+
+**Why an MCS branch cannot do harm.** It contributes three of nine votes and never predicts
+the majority labels. While the G and S branches agree on a majority label they already hold
+six votes and win. The MCS can only move the decision once the other two split — the
+uncertain cases where a sharper view of the rare classes helps. The gate is emergent; it
+needs no threshold.
+
+---
+
+## 4 · Submission 1 — SFT × SFTf × FT
+
+Our first submission fixes the scope assignment to **SFT = G, SFTf = MCS, FT = S** and
+picks each slot's best configuration by cross-validation. The assignment is an architecture
+decision, not a measured one: cross-validation cannot rank it, because the MCS branch lives
+on its own scale.
+
+This composition is also the cheapest one to run. The SFT branch and the frozen head of the
+SFTf branch share a decoder backbone, so the ensemble needs **two decoder models and one
+encoder** in memory rather than nine independent models; adapters are small and
+hot-swappable on a loaded base.
+
+| Subtask | branch | model · method · scope | folds | CV F1 (3-best mean) |
+|---|---|---|---|---|
+| **ST1** | 1 | `min` · SFT · **G** · L1234 | 4, 2, 3 | 0.8226 |
+| | 2 | `min` · SFTf-ClsHead · **MCS** · L1234 | 4, 1, 2 | 0.0869 ¹ |
+| | 3 | `ettin-1b` · FT · **S** · L1234 | 2, 4, 0 | 0.7928 |
+| **ST2** | 1 | `phi4` · SFT · **G** · L1234 | 4, 2, 0 | 0.8491 |
+| | 2 | `min` · SFTf-LR · **MCS** · L1234 | 2, 4, 3 | 0.7309 ¹ |
+| | 3 | `ettin-1b` · FT · **S** · L1234 | 4, 1, 2 | 0.8652 |
+| **ST3** | 1 | `phi4` · SFT · **G** · L1234 | 0, 2, 1 | 0.6727 |
+| | 2 | `phi4` · SFTf-LR · **MCS** · L1234 | 3, 2, 0 | 0.6465 ¹ |
+| | 3 | `ettin-1b` · FT · **S** · L1234 | 4, 2, 1 | 0.6127 |
+
+¹ MCS scale — not comparable to the G and S rows above it.
+
+All nine voters read **L1234** (transcript + video context + channel + product page). Every
+subtask covers all five folds.
+
+### Scores
+
+| | mean | ST1 | ST2 | ST3 |
+|---|---|---|---|---|
+| **out-of-fold** (train, 2,353 instances) | 0.6320 | 0.4804 | 0.8169 | 0.5988 |
+| **development set** (504 instances) | **0.7675** | 0.8641 | 0.7549 | 0.6835 |
+| **test set** (503 instances) | *pending* | | | |
+
+The two internal numbers are not on the same scale, and the gap is structural rather than a
+transfer loss. On the out-of-fold estimate an instance is only voted on by the branches
+whose deployed folds contain that instance's held-out fold — **one to three votes**. On the
+development set every one of the nine fold-models votes on every instance — **nine votes**,
+which is also the situation at test time. Out-of-fold numbers are therefore comparable to
+each other and to nothing else; only the development number is comparable to a leaderboard.
+
+The development set was never used for selection — see §5. It is a transfer check, read
+once, after the composition was frozen.
+
+Further systems will be added here as we submit them.
+
+---
+
+## 5 · Why selection never touches the development set
+
+We measured the reliability of the development set by splitting it in half and correlating
+the two halves across configurations:
 
 | | ST1 | ST2 | ST3 |
 |---|---|---|---|
 | split-half correlation *r* | 0.06 | 0.03 | 0.37 |
 
 With 504 instances, differences below roughly 0.03 on dev are noise. A search that ranks
-candidates on dev is fitting that noise, and we could show it: freely searching fold-models
-against dev produced systems that looked better on dev and were not. So dev is used for
-exactly one thing — a transfer check, read once, after selection is frozen.
+candidates on dev fits that noise — and we could show it: freely searching fold-models
+against dev produced systems that looked better on dev and were not.
 
 **The metric is verified, not assumed.** The official scorer is not public, so we
 reimplemented it and calibrated against the leaderboard: our local score matched the
-returned score to four decimal places across every column (Δ = 0.0000). Every number in
-this report comes from that implementation.
-
-![Cross-validation grid over model × method × scope × level](figures/voter-grid.png)
-
-*Each cell is one configuration's three-best-fold mean; the grid is how we see the search
-space at a glance.*
+returned score to four decimal places across every column (Δ = 0.0000).
 
 ---
 
-## 4 · Things that did not work, and one that nearly cost us
+## 6 · What each data level buys
 
-Negative results are cheap to hide and expensive to rediscover, so:
+The task ships four cumulative access levels ordered by collection cost. We trained the
+full ladder and measured each rung, using the best nine-voter system available under each
+cap:
+
+| System | mean | ST1 | ST2 | ST3 | Δ over previous rung |
+|---|---|---|---|---|---|
+| L1 — transcript only | 0.6103 | 0.6492 | 0.6013 | 0.5805 | — |
+| ≤ L12 — + video context | 0.7292 | 0.7966 | 0.7214 | 0.6696 | **+0.119** |
+| ≤ L123 — + channel | 0.7348 | 0.8181 | 0.7092 | 0.6770 | +0.006 |
+| ≤ L1234 — + product page | **0.7675** | 0.8459 | 0.7795 | 0.6770 | +0.033 |
+
+Against the median added tokens per instance (L2 ≈ 290, L3 ≈ 7, L4 ≈ 375):
+
+- **Level 2 is the whole game.** Title, description and the platform's own paid-promotion
+  flag buy +0.119 for about 290 tokens. Nothing else comes close.
+- **Level 3 is free and worthless.** The channel name costs seven tokens and moves the mean
+  by +0.006, inside our noise band. A monitoring system can skip it.
+- **Level 4 pays only on ST1 and ST2.** The product page says what is being sold and in
+  which category. It does not help with compliance flags: **ST3 is saturated at L12**.
+
+For an authority weighing crawl cost against accuracy: fetch video metadata always, skip
+channel context, fetch product pages only if commercial type and product category matter.
+
+One caveat on the record: our L1 systems were trained before we fixed the truncation bug
+below, so the bottom rung is pessimistic. The gap between L1 and L12 is real; its exact
+size is not settled.
+
+---
+
+## 7 · Negative results
 
 - **Input truncation.** Our first training wave capped inputs at a sequence length that
   silently cut **16.9 % of product pages** and 7.2 % of descriptions, with the truncation
-  side differing between training and inference. We found it by auditing token lengths
-  rather than by seeing a bad score. After verifying that all 3,360 instances fit in 8,192
-  tokens at every level, we retrained. Anyone building on this data should measure their
-  truncation before trusting a level-ablation.
-- **Data augmentation did nothing.** Paired over 68 recipes, augmentation moved the mean by
-  +0.007 — inside noise. We dropped it.
-- **Prompting has a ceiling well below training.** Optimised prompts (OPRO) reached ST2
-  0.59 against 0.89 for a trained head, and ST3 0.53 against 0.67.
-- **Minority-class specialists cannot carry a label alone.** A specialist trained only on
-  the rare classes contributes three of nine votes, so it can break ties on rare labels but
-  can never fire one against the other six votes. That is the intended behaviour, and it
-  means such a branch raises rare-label recall only in combination, never on its own.
+  side differing between training and inference. We found it by auditing token lengths, not
+  by seeing a bad score. After verifying that all 3,360 instances fit in 8,192 tokens at
+  every level, we retrained. Measure your truncation before trusting a level ablation.
+- **Data augmentation did nothing.** Paired over 68 recipes it moved the mean by +0.007 —
+  inside noise. Dropped.
+- **Prompting has a ceiling well below training.** OPRO reached ST2 0.59 against 0.89 for a
+  trained head, and ST3 0.53 against 0.67.
 
 ---
 
-## 5 · Reproducibility and scope
+## 8 · Scope, reproducibility, ethics
 
-This repository documents the system. It deliberately does not contain:
-
-- **the task data**, in any form, including derived splits — see [DATA.md](DATA.md);
-- **per-instance predictions**, which are tied to identifiable channels;
-- **trained adapter weights**, whose licence status as derivatives of a share-alike dataset
-  we have not settled.
-
-Curated source for the parts that carry the method — the metric implementation, the voting
-rules, the channel-disjoint split builder, and the selection scripts — will be added here.
-It is held back for one pass of cleaning: the working tree carries internal cluster paths
-and account names that do not belong in public.
+This repository documents the system. It deliberately contains no task data, no
+per-instance predictions (they are tied to identifiable channels), and no trained adapter
+weights. Curated source for the metric implementation, the voting rules, the
+channel-disjoint split builder and the selection scripts will be added after one pass of
+cleaning — the working tree carries internal cluster paths and account names that do not
+belong in public.
 
 **Bonus track.** We did not collect off-platform destination data. **Legal material:** we
 used only the citations shipped in `legal_provisions.json` and retrieved nothing beyond
 them.
 
----
-
-## 6 · Ethics
-
-The compliance labels in this task are a **research benchmark, not legal advice and not a
-finding of unlawfulness**. Our system outputs risk flags for a benchmark; it does not
-determine that any creator violated any provision.
-
-We do not re-identify creators, do not contact them, and report no result that would mark
-an individual creator as non-compliant. All figures here are aggregate. See
-[DATA.md](DATA.md) for the licence terms we accepted with the data.
+The compliance labels are a **research benchmark, not legal advice and not a finding of
+unlawfulness**. We do not re-identify creators, do not contact them, and report no result
+that would mark an individual creator as non-compliant. All figures here are aggregate.
+See [DATA.md](DATA.md).

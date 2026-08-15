@@ -143,52 +143,28 @@ needs no threshold.
 
 ## 4 · Submission 1 — SFT × SFTf × FT
 
-Our first submission fixes the scope assignment to **SFT = G, SFTf = MCS, FT = S** and
-picks each slot's best configuration by cross-validation. The assignment is an architecture
-decision, not a measured one: cross-validation cannot rank it, because the MCS branch lives
-on its own scale.
+The scope assignment is fixed to **SFT = G, SFTf = MCS, FT = S**, and each slot takes its
+best configuration by cross-validation. All nine voters read **L1234**.
 
-This composition is also the cheapest one to run. The SFT branch and the frozen head of the
-SFTf branch share a decoder backbone, so the ensemble needs **two decoder models and one
-encoder** in memory rather than nine independent models; adapters are small and
-hot-swappable on a loaded base.
-
-| Subtask | branch | model · method · scope | folds | CV F1 (3-best mean) |
-|---|---|---|---|---|
-| **ST1** | 1 | `min` · SFT · **G** · L1234 | 4, 2, 3 | 0.8226 |
-| | 2 | `min` · SFTf-ClsHead · **MCS** · L1234 | 4, 1, 2 | 0.0869 ¹ |
-| | 3 | `ettin-1b` · FT · **S** · L1234 | 2, 4, 0 | 0.7928 |
-| **ST2** | 1 | `phi4` · SFT · **G** · L1234 | 4, 2, 0 | 0.8491 |
-| | 2 | `min` · SFTf-LR · **MCS** · L1234 | 2, 4, 3 | 0.7309 ¹ |
-| | 3 | `ettin-1b` · FT · **S** · L1234 | 4, 1, 2 | 0.8652 |
-| **ST3** | 1 | `phi4` · SFT · **G** · L1234 | 0, 2, 1 | 0.6727 |
-| | 2 | `phi4` · SFTf-LR · **MCS** · L1234 | 3, 2, 0 | 0.6465 ¹ |
-| | 3 | `ettin-1b` · FT · **S** · L1234 | 4, 2, 1 | 0.6127 |
-
-¹ MCS scale — not comparable to the G and S rows above it.
-
-All nine voters read **L1234** (transcript + video context + channel + product page). Every
-subtask covers all five folds.
-
-### Scores
+| | **G** — SFT | **S** — FT | **MCS** — SFTf |
+|---|---|---|---|
+| **ST1** | `min` folds 4,2,3 | `ettin-1b` folds 2,4,0 | `min`-ClsHead folds 4,1,2 |
+| **ST2** | `phi4` folds 4,2,0 | `ettin-1b` folds 4,1,2 | `min`-LR folds 2,4,3 |
+| **ST3** | `phi4` folds 0,2,1 | `ettin-1b` folds 4,2,1 | `phi4`-LR folds 3,2,0 |
 
 | | mean | ST1 | ST2 | ST3 |
 |---|---|---|---|---|
-| **out-of-fold** (train, 2,353 instances) | 0.6320 | 0.4804 | 0.8169 | 0.5988 |
+| out-of-fold (train, 2,353 instances) | 0.6320 | 0.4804 | 0.8169 | 0.5988 |
 | **development set** (504 instances) | **0.7675** | 0.8641 | 0.7549 | 0.6835 |
-| **test set** (503 instances) | *pending* | | | |
+| test set (503 instances) | *pending* | | | |
 
-The two internal numbers are not on the same scale, and the gap is structural rather than a
-transfer loss. On the out-of-fold estimate an instance is only voted on by the branches
-whose deployed folds contain that instance's held-out fold — **one to three votes**. On the
-development set every one of the nine fold-models votes on every instance — **nine votes**,
-which is also the situation at test time. Out-of-fold numbers are therefore comparable to
-each other and to nothing else; only the development number is comparable to a leaderboard.
+The two internal numbers are on different scales. Out-of-fold, an instance is voted on only
+by the branches whose deployed folds contain its held-out fold — **one to three votes**. On
+dev, all nine fold-models vote on every instance, which is also the situation at test time.
+Only the dev number is comparable to a leaderboard.
 
-The development set was never used for selection — see §5. It is a transfer check, read
-once, after the composition was frozen.
-
-Further systems will be added here as we submit them.
+Dev was never used for selection (§5); it is a transfer check, read once after the
+composition was frozen. Further systems will be added here as we submit them.
 
 ---
 
@@ -213,9 +189,17 @@ returned score to four decimal places across every column (Δ = 0.0000).
 
 ## 6 · What each data level buys
 
-The task ships four cumulative access levels ordered by collection cost. We trained the
-full ladder and measured each rung, using the best nine-voter system available under each
-cap:
+The task ships four cumulative access levels ordered by collection cost. **The grid was
+trained at every level, not just at the top:** each of L1, L12, L123 and L1234 carries
+170–174 configurations with all five folds complete, spanning all four models and all nine
+methods. The ladder therefore compares like with like rather than a full grid against a
+thin one.
+
+**How each rung is measured.** For a given cap we run the same selection as everywhere else
+— best G, best S, best MCS by three-best-fold cross-validation — but restricted to voters
+that read no level above the cap. The resulting nine-voter system is then scored **on the
+development set**, which no voter has seen. So the ladder is a comparison of complete
+systems at each data cost, not of individual voters.
 
 | System | mean | ST1 | ST2 | ST3 | Δ over previous rung |
 |---|---|---|---|---|---|
@@ -236,9 +220,12 @@ Against the median added tokens per instance (L2 ≈ 290, L3 ≈ 7, L4 ≈ 375):
 For an authority weighing crawl cost against accuracy: fetch video metadata always, skip
 channel context, fetch product pages only if commercial type and product category matter.
 
-One caveat on the record: our L1 systems were trained before we fixed the truncation bug
-below, so the bottom rung is pessimistic. The gap between L1 and L12 is real; its exact
-size is not settled.
+Two caveats on the record. The ladder was measured before the full-text retraining
+described in §7, so every rung sits on capped inputs; the L1 rung suffers most, because
+its scaffold ate a larger share of a short sequence. The gaps are real and the ordering has
+held up in everything we have measured since, but the exact sizes are not settled, and we
+would not want the +0.119 quoted to three decimals. Re-running the ladder on the retrained
+grid is the first thing we will add here.
 
 ---
 

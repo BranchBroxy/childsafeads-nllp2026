@@ -28,17 +28,17 @@
 \node[branchbox, draw=clrCls!70!black, fill=clrCls!22] (bA) at (\cA, \ybox)
   {Generalist (G)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
    SFT $\cdot$ all subtasks}};
-\node[branchbox, draw=clrPCS!72!black, fill=clrPCS!26] (bB) at (\cB, \ybox)
-  {Min.-Class Spec.\ (MCS)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
-   SFTf $\cdot$ rare labels}};
-\node[branchbox, draw=clrPrompt!75!black, fill=clrPrompt!30] (bC) at (\cC, \ybox)
+\node[branchbox, draw=clrPrompt!75!black, fill=clrPrompt!30] (bB) at (\cB, \ybox)
   {Specialist (S)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
    FT $\cdot$ one subtask}};
+\node[branchbox, draw=clrPCS!72!black, fill=clrPCS!26] (bC) at (\cC, \ybox)
+  {Min.-Class Spec.\ (MCS)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
+   SFTf $\cdot$ rare labels}};
 
 % Jede Verbindung: senkrecht auf den Verteiler, waagerecht, senkrecht in den
 % Chip, senkrecht weiter auf die Sammelschiene. Keine Diagonalen, alle drei
 % Branches identisch aufgebaut.
-\foreach \bb/\xc/\clr in {bA/\cA/clrCls, bB/\cB/clrPCS, bC/\cC/clrPrompt}{
+\foreach \bb/\xc/\clr in {bA/\cA/clrCls, bB/\cB/clrPrompt, bC/\cC/clrPCS}{
   \draw[bus] (\bb.south) -- (\xc, \ybus);
   \draw[bus] ({\xc-\dchip}, \ybus) -- ({\xc+\dchip}, \ybus);
   \foreach \dx in {-\dchip, 0, \dchip}{

@@ -1,0 +1,59 @@
+\documentclass[border=3pt,tikz]{standalone}
+\input{preamble}
+\begin{document}
+\begin{tikzpicture}
+
+% ── Generalist ─────────────────────────────────────────────────────────────
+\node[sysbox, draw=clrCls!70!black, fill=clrCls!22] (g) at (-4.6, 1.35)
+  {Generalist (G)\\[-1.5pt]{\fontsize{5.6}{7}\selectfont\mdseries
+   all subtasks $\cdot$ domain knowledge}};
+\node[lab, draw=clrCls!60!black, fill=clrCls!14] (g1) at (-5.55, 0.42) {ST1};
+\node[lab, draw=clrCls!60!black, fill=clrCls!14] (g2) at (-4.60, 0.42) {ST2};
+\node[lab, draw=clrCls!60!black, fill=clrCls!14] (g3) at (-3.65, 0.42) {ST3};
+\foreach \t in {g1, g2, g3}{\draw[edge] (g.south) -- (\t.north);}
+\node[note, anchor=north, text width=3.1cm] at (-4.6, 0.12)
+  {one model, all three label sets; the prompt selects the subtask};
+
+% ── Specialist ─────────────────────────────────────────────────────────────
+\node[sysbox, draw=clrPrompt!75!black, fill=clrPrompt!30] (s) at (-0.7, 1.35)
+  {Specialist (S)\\[-1.5pt]{\fontsize{5.6}{7}\selectfont\mdseries
+   one subtask $\cdot$ full label set}};
+\node[lab, draw=clrPrompt!65!black, fill=clrPrompt!18] (s1) at (-0.7, 0.42)
+  {all labels of ST$_k$};
+\draw[edge] (s.south) -- (s1.north);
+\node[note, anchor=north, text width=3.1cm] at (-0.7, 0.12)
+  {one model per subtask; narrower signal, different errors};
+
+% ── Minority-class specialist ──────────────────────────────────────────────
+\node[sysbox, draw=clrPCS!72!black, fill=clrPCS!26] (m) at (3.9, 1.35)
+  {Minority-Class Spec.\ (MCS)\\[-1.5pt]{\fontsize{5.6}{7}\selectfont\mdseries
+   one subtask $\cdot$ rare labels only}};
+% removed majority block (struck through) + kept minority block
+\node[lab, draw=black!45, fill=black!8, minimum width=1.95cm] (mx) at (2.88, 0.42)
+  {\textcolor{black!55}{majority $>50\,\%$}};
+\draw[black!35, line width=0.4pt] (mx.south west) -- (mx.north east);
+\draw[black!35, line width=0.4pt] (mx.north west) -- (mx.south east);
+\node[lab, draw=clrPCS!62!black, fill=clrPCS!16, minimum width=1.55cm] (mk)
+  at (4.92, 0.42) {rare labels};
+\draw[edge] (m.south) -- (mk.north);
+\node[note, anchor=north, text width=3.9cm] at (3.9, 0.12)
+  {drop the most frequent labels until the dropped set passes 50\,\%};
+
+% ── per-subtask instantiation of the MCS rule ──────────────────────────────
+\node[hdr, anchor=west] at (-6.05, -1.15) {\textsc{the rule per subtask}};
+\node[anchor=north west, font=\fontsize{6.4}{9.2}\selectfont, text width=12.2cm]
+  at (-6.05, -1.42)
+  {\textbf{ST1}\; \textcolor{black!55}{drop} \texttt{physical\_goods} 47\,\% $+$
+   \texttt{digital\_content\_or\_services} 46\,\% $=$ \textbf{93\,\%},
+   keep 3 of 5 labels\\
+   \textbf{ST2}\; \textcolor{black!55}{drop} \texttt{apps} 29\,\% $+$
+   \texttt{hardware\_electronics} 22\,\% $=$ \textbf{51\,\%},
+   keep 10 of 12 labels\\
+   \textbf{ST3}\; \textcolor{black!55}{drop} \texttt{misleading\_claim}
+   \textbf{54\,\%}, keep 7 of 8 labels};
+\node[note, anchor=north west, text width=12.2cm] at (-6.05, -2.62)
+  {ST1 is single-label, so dropping a label drops its instances; ST2 and ST3
+   are multi-label, so only the label columns go and the instances stay.};
+
+\end{tikzpicture}
+\end{document}

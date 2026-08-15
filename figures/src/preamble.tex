@@ -1,0 +1,37 @@
+% Gemeinsame Praeambel aller Abbildungen — Palette und Styles identisch zum
+% GermEval-2026-Paper (Nuernberg NLP), damit die Bilder dort wiederverwendbar
+% sind, ohne neu gezeichnet zu werden.
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,positioning,fit,backgrounds,calc,decorations.pathreplacing}
+
+\definecolor{clrPrompt}{HTML}{B0CA97} % green  — Prompting (baseline)
+\definecolor{clrSFT}{HTML}{E8A087}    % salmon — SFT (generative)
+\definecolor{clrCls}{HTML}{88C4C8}    % teal   — ClsHead / FT (discriminative)
+\definecolor{clrEns}{HTML}{D1BC8A}    % gold   — ensemble / majority vote
+\definecolor{clrPCS}{HTML}{B7A0C9}    % purple — minority-class scope
+
+\tikzset{
+  sysbox/.style={rectangle, rounded corners=3pt, line width=0.9pt,
+    minimum width=2.7cm, minimum height=0.82cm, align=center,
+    inner ysep=2pt, inner xsep=4pt, font=\fontsize{7.5}{9}\selectfont\bfseries},
+  voterchip/.style={rectangle, rounded corners=1.5pt, line width=0.55pt,
+    minimum width=0.78cm, minimum height=0.36cm, align=center,
+    inner sep=1pt, font=\fontsize{5.4}{6.4}\selectfont},
+  major/.style={rectangle, rounded corners=3pt, line width=0.9pt,
+    align=center, font=\footnotesize\bfseries, inner ysep=4pt, inner xsep=10pt},
+  io/.style={rectangle, rounded corners=2pt, line width=0.55pt, align=center,
+    minimum width=1.35cm, minimum height=0.72cm, fill=black!3, draw=black!35,
+    font=\fontsize{7.2}{8.6}\selectfont},
+  bb/.style={rectangle, rounded corners=3pt, line width=0.8pt, align=center,
+    minimum width=2.35cm, minimum height=0.86cm,
+    font=\fontsize{7.4}{8.8}\selectfont},
+  lab/.style={rectangle, rounded corners=1.2pt, line width=0.45pt,
+    minimum height=0.30cm, align=center, inner sep=1.5pt,
+    font=\fontsize{5.6}{6.8}\selectfont},
+  edge/.style={-{Stealth[length=4pt]}, line width=0.6pt, black!50},
+  bus/.style={line width=0.6pt, black!50},
+  note/.style={font=\fontsize{6.4}{7.8}\selectfont\itshape, text=black!55,
+    align=center},
+  hdr/.style={font=\fontsize{6.5}{8}\selectfont\bfseries, text=black!55},
+}

@@ -17,21 +17,7 @@ It contains **no task data** — see [DATA.md](DATA.md) for the licence and ethi
 The scope axis decides **which training data a voter sees**. It carries the main idea of
 the system: three scopes, three different strengths, three different failure modes.
 
-```mermaid
-flowchart LR
-  subgraph G["Generalist (G)"]
-    direction TB
-    G1["trains jointly on<br/>ST1 + ST2 + ST3"] --> G2["one model,<br/>subtask chosen by prompt"]
-  end
-  subgraph S["Specialist (S)"]
-    direction TB
-    S1["trains on<br/>one subtask only"] --> S2["one model per subtask,<br/>full label set"]
-  end
-  subgraph M["Minority-Class Specialist (MCS)"]
-    direction TB
-    M1["trains on one subtask<br/>without its majority labels"] --> M2["one model per subtask,<br/>rare labels only"]
-  end
-```
+![Class scopes: generalist, specialist, minority-class specialist](figures/fig-scopes.png)
 
 **Generalist (G).** Trains jointly on all three subtasks in a multi-task setup. The shared
 signal is meant to build broad domain knowledge — patterns common to the subtasks that no
@@ -74,21 +60,7 @@ They are **functional positions**, not method names: what does the same thing on
 and on an encoder sits in the same column, which is what makes the grid comparable across
 model families.
 
-```mermaid
-flowchart TB
-  B["backbone LLM"]
-  B --> P["<b>OPRO</b> — prompt only<br/>nothing trained"]
-  B --> SFT["<b>SFT</b> — generative<br/>backbone tuned (QLoRA), emits the label as text"]
-  B --> CH["<b>ClsHead</b> / <b>FT</b> — discriminative<br/>backbone tuned + classification head"]
-  B --> BF["backbone <b>frozen</b>"]
-  BF --> BLR["<b>Base-LR</b> — logistic regression on raw embeddings"]
-  BF --> BCH["<b>Base-ClsHead</b> — MLP head on raw embeddings"]
-  G["the trained <b>G</b> generalist, frozen"]
-  CH -.-> G
-  SFT -.-> G
-  G --> FLR["<b>SFTf-LR</b> / <b>FTf-LR</b> — logistic regression on generalist embeddings"]
-  G --> FCH["<b>SFTf-ClsHead</b> / <b>FTf-ClsHead</b> — MLP head on generalist embeddings"]
-```
+![Adaptation methods as functional positions](figures/fig-methods.png)
 
 | Column | Decoder | Encoder | What it is |
 |---|---|---|---|
@@ -116,6 +88,10 @@ like once trained:
 
 ![Cross-validation grid over model × method × scope × level](figures/voter-grid.png)
 
+*Every cell is one configuration's three-best-fold mean. TikZ sources for all
+figures are in [`figures/src/`](figures/src) — `bash figures/src/build.sh` rebuilds
+them.*
+
 ---
 
 ## 3 · The nine-voter ensemble
@@ -132,13 +108,7 @@ therefore casts three votes.
 An **ensemble** is three branches — nine voters — deciding every instance by **plain strict
 majority** (> 50 % of votes cast).
 
-```mermaid
-flowchart LR
-  A["branch 1<br/>SFT · G"] --> V["9 votes<br/>plain majority"]
-  B["branch 2<br/>SFTf · MCS"] --> V
-  C["branch 3<br/>FT · S"] --> V
-  V --> O["subtask prediction"]
-```
+![The nine-voter ensemble](figures/fig-ensemble.png)
 
 **Cross-validation.** Five folds over the training set, grouped by **channel**, with an
 assertion that no channel appears in two folds. Sponsored segments from one creator share

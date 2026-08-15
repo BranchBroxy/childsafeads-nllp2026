@@ -9,3 +9,7 @@ submissions/
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# LaTeX-Zwischenprodukte
+figures/src/*.aux
+figures/src/*.log

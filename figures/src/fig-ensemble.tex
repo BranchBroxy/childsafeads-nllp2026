@@ -1,0 +1,57 @@
+\documentclass[border=3pt,tikz]{standalone}
+\input{preamble}
+\begin{document}
+\begin{tikzpicture}
+
+\begin{scope}[on background layer]
+  \draw[draw=black!38, dashed, rounded corners=8pt, line width=0.9pt,
+        fill=black!2] (-5.35, 1.42) rectangle (5.35, -2.20);
+\end{scope}
+\node[hdr, anchor=west] at (-5.15, 1.20)
+  {\textsc{per-subtask voter ensemble --- three branches, nine voters}};
+
+% ── three branches: scope on top, family underneath ────────────────────────
+\node[sysbox, draw=clrCls!70!black, fill=clrCls!22] (b1) at (-3.45, 0.52)
+  {Generalist (G)\\[-1.5pt]{\fontsize{5.6}{7}\selectfont\mdseries
+   \textbf{SFT} $\cdot$ all subtasks}};
+\node[sysbox, draw=clrPCS!72!black, fill=clrPCS!26] (b2) at (0, 0.52)
+  {Minority-Class Spec.\ (MCS)\\[-1.5pt]{\fontsize{5.6}{7}\selectfont\mdseries
+   \textbf{SFTf} $\cdot$ rare labels only}};
+\node[sysbox, draw=clrPrompt!75!black, fill=clrPrompt!30] (b3) at (3.45, 0.52)
+  {Specialist (S)\\[-1.5pt]{\fontsize{5.6}{7}\selectfont\mdseries
+   \textbf{FT} $\cdot$ one subtask}};
+
+% ── nine voters: three per branch, one per deployed fold ───────────────────
+\foreach \b/\xc/\clr in {b1/-3.45/clrCls, b2/0/clrPCS, b3/3.45/clrPrompt}{
+  \foreach \dx/\lbl in {-0.92/{fold a}, 0/{fold b}, 0.92/{fold c}}{
+    \node[voterchip, draw=\clr!60!black, fill=\clr!14] at ({\xc+\dx}, -0.46) {\lbl};
+    \draw[edge] (\b.south) |- ({\xc+\dx}, -0.10) -- ({\xc+\dx}, -0.28);
+    \draw[bus]  ({\xc+\dx}, -0.64) -- ({\xc+\dx}, -0.76);
+  }
+}
+% Beschriftung der Voter-Chips: gehoert unter die Chip-Reihe, nicht an den
+% Containerrand — dort haette sie die gestrichelte Kante geschnitten.
+\node[note, anchor=north east, align=right, text width=3.4cm] at (-1.30, -0.82)
+  {each chip is one fold-model --- the three folds that configuration
+   scored best on};
+
+% ── collector bus and majority ─────────────────────────────────────────────
+\draw[bus] (-4.37, -0.76) -- (4.37, -0.76);
+\node[major, draw=clrEns!80!black, fill=clrEns!28] (ens) at (0, -1.52)
+  {Plain strict majority over the nine votes\quad
+   {\fontsize{8}{9}\selectfont\mdseries $2\sum_j \mathbf{1}[v_j{=}c] > 9$}};
+\draw[edge] (0, -1.12) -- (ens.north);
+
+% ── the two rules that sit around the vote ─────────────────────────────────
+\node[note, anchor=north west, align=left, text width=10.9cm] at (-5.35, -2.45)
+  {\textbf{Fold coverage.} The three fold sets are chosen so that all five folds
+   appear across the nine voters --- no slice of the training data goes unused.
+   \\[2pt]
+   \textbf{Why the MCS cannot do harm.} It holds three of nine votes and never
+   predicts the majority labels. While G and S agree on a majority label they
+   already hold six votes and win; the MCS can only move the decision once the
+   other two split --- the uncertain cases where a sharper view of the rare
+   classes helps. The gate is emergent and needs no threshold.};
+
+\end{tikzpicture}
+\end{document}

@@ -10,8 +10,8 @@
 \def\ybox{1.05}    % Mitte der Branch-Box
 \def\ybus{0.28}    % Verteiler unter der Box
 \def\ychip{-0.20}  % Mitte der Voter-Chips
-\def\ycol{-0.88}   % Sammelschiene
-\def\yens{-1.48}   % Mehrheitsbalken
+\def\ycol{-1.06}   % Sammelschiene
+\def\yens{-1.66}   % Mehrheitsbalken
 
 \def\cA{-3.90}
 \def\cB{0}
@@ -20,20 +20,20 @@
 
 \begin{scope}[on background layer]
   \draw[draw=black!38, dashed, rounded corners=8pt, line width=0.9pt,
-        fill=black!2] (-5.85, 1.86) rectangle (5.85, -2.00);
+        fill=black!2] (-7.55, 1.86) rectangle (7.55, -2.18);
 \end{scope}
-\node[hdr, anchor=west] at (-5.65, 1.66)
+\node[hdr, anchor=west] at (-7.35, 1.66)
   {\textsc{one subtask: three branches, three voters each}};
 
 \node[branchbox, draw=clrCls!70!black, fill=clrCls!22] (bA) at (\cA, \ybox)
   {Generalist (G)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
-   SFT $\cdot$ all subtasks\\[-1pt]three voters}};
+   SFT $\cdot$ all subtasks}};
 \node[branchbox, draw=clrPrompt!75!black, fill=clrPrompt!30] (bB) at (\cB, \ybox)
   {Specialist (S)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
-   FT $\cdot$ one subtask\\[-1pt]three voters}};
+   FT $\cdot$ one subtask}};
 \node[branchbox, draw=clrPCS!72!black, fill=clrPCS!26] (bC) at (\cC, \ybox)
   {Min.-Class Spec.\ (MCS)\\[-1.5pt]{\fontsize{5.8}{7}\selectfont\mdseries
-   SFTf $\cdot$ rare labels\\[-1pt]three voters}};
+   SFTf $\cdot$ rare labels}};
 
 % Jede Verbindung: senkrecht auf den Verteiler, waagerecht, senkrecht in den
 % Chip, senkrecht weiter auf die Sammelschiene. Keine Diagonalen, alle drei
@@ -41,16 +41,24 @@
 \foreach \bb/\xc/\clr in {bA/\cA/clrCls, bB/\cB/clrPrompt, bC/\cC/clrPCS}{
   \draw[bus] (\bb.south) -- (\xc, \ybus);
   \draw[bus] ({\xc-\dchip}, \ybus) -- ({\xc+\dchip}, \ybus);
-  % Jeder der neun Voter bekommt seinen eigenen Abgang auf die Sammelschiene —
-  % es sind neun Stimmen, und das muss man sehen. Dass je drei einen Branch
-  % bilden, steht in der Branch-Box selbst, nicht als Klammer dazwischen: eine
-  % Klammer haette genau die aeusseren beiden Abgaenge blockiert.
   \foreach \dx in {-\dchip, 0, \dchip}{
     \node[chip, draw=\clr!60!black, fill=\clr!14] at ({\xc+\dx}, \ychip) {voter};
     \draw[edge] ({\xc+\dx}, \ybus) -- ({\xc+\dx}, {\ychip+0.19});
-    \draw[bus]  ({\xc+\dx}, {\ychip-0.19}) -- ({\xc+\dx}, \ycol);
+    % Jeder Voter behaelt seinen eigenen Abgang bis auf die Sammelschiene — es
+    % sind neun Stimmen. Die Abgaenge beginnen UNTER der Klammer, damit sie sie
+    % nicht durchschneiden.
+    \draw[bus]  ({\xc+\dx}, {\ychip-0.44}) -- ({\xc+\dx}, \ycol);
   }
+  \draw[decorate, decoration={brace, amplitude=3pt, mirror, raise=1.4pt},
+        \clr!55!black, line width=0.55pt]
+        ({\xc-\dchip-0.43}, {\ychip-0.19}) -- ({\xc+\dchip+0.43}, {\ychip-0.19});
 }
+% Die Beschriftung steht einmal am linken Rand und gilt fuer alle drei Klammern
+% — zwischen den Branches ist kein Platz, und unter jeder Klammer wuerde sie
+% von den Abgaengen durchschnitten.
+\node[font=\fontsize{6.2}{7.6}\selectfont\itshape, text=black!55, anchor=east,
+      align=right] at ({\cA-\dchip-0.62}, {\ychip-0.34})
+      {three voters\\$=$ one branch};
 
 \draw[bus] ({\cA-\dchip}, \ycol) -- ({\cC+\dchip}, \ycol);
 \node[major, draw=clrEns!80!black, fill=clrEns!28] (ens) at (0, \yens)

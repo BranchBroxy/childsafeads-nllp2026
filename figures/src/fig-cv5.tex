@@ -15,12 +15,12 @@
 ]
 
 \def\xL{-3.69}   % linke Kante der Leiste
-\def\xR{4.37}    % rechte Kante der Leiste
+\def\xR{4.37}    % 0.68 rechts der Reihe; Zeilenlabels 0.68 links    % rechte Kante der Leiste
 
 % ── Datensatz ──────────────────────────────────────────────────────────────
 \node[rectangle, draw=black!45, fill=black!4, rounded corners=3pt, line width=0.8pt,
-      minimum width=8.06cm, minimum height=0.52cm, align=center,
-      font=\fontsize{7}{8.5}\selectfont\bfseries] (ds) at (0.34, 4.66)
+      minimum width=7.38cm, minimum height=0.52cm, align=center,
+      font=\fontsize{7}{8.5}\selectfont\bfseries] (ds) at (0, 4.66)
   {dataset\\[-2pt]{\fontsize{5.8}{7}\selectfont\mdseries
    2{,}353 training instances}};
 
@@ -30,7 +30,7 @@
   \node[font=\fontsize{6.5}{8}\selectfont\bfseries]
     at ({\i*1.52 - 3.04}, 3.84) {f\i};
 }
-\draw[bus] (0.34, 4.40) -- (0.34, 4.22);
+\draw[bus] (0, 4.40) -- (0, 4.22);
 \draw[bus] (-3.04, 4.22) -- (3.04, 4.22);
 \foreach \i in {0,...,4}{
   \draw[edge] ({\i*1.52 - 3.04}, 4.22) -- ({\i*1.52 - 3.04}, 4.10);
@@ -45,7 +45,7 @@
 }
 
 % ── fuenf Fold-Modelle ─────────────────────────────────────────────────────
-\node[hdr, anchor=east] at (-4.45, 2.05) {\textsc{train}};
+\node[hdr, anchor=east] at (-4.37, 2.05) {\textsc{train}};
 \foreach \i in {0,...,4}{
   \node[voter] (m\i) at ({\i*1.52 - 3.04}, 2.05) {};
   \node[font=\fontsize{6.2}{7.6}\selectfont\bfseries, anchor=north, inner sep=1.6pt]
@@ -62,7 +62,7 @@
 }
 \node[capt, anchor=west, align=left] at (\xR, 2.05)
   {\textbf{M} $=$ model\\[1pt]M$_i$ holds out f$_i$};
-\node[capt, anchor=north] at (0.34, 1.48)
+\node[capt, anchor=north] at (0, 1.48)
   {each model trains on four folds and is scored on the fifth};
 
 % Legende
@@ -74,8 +74,8 @@
   {held-out fold};
 
 % ── Auswahl der drei besten Folds ──────────────────────────────────────────
-\draw[edge, line width=0.7pt] (0.34, 1.18) -- (0.34, 0.54);
-\node[hdr, anchor=east] at (-4.45, 0.10) {\textsc{deploy}};
+\draw[edge, line width=0.7pt] (0, 1.18) -- (0, 0.54);
+\node[hdr, anchor=east] at (-4.37, 0.10) {\textsc{deploy}};
 \foreach \i/\keep in {0/1, 1/0, 2/1, 3/0, 4/1}{
   \ifnum\keep=1\relax
     \node[voter] (d\i) at ({\i*1.52 - 3.04}, 0.10) {};
@@ -91,13 +91,13 @@
           text=black!40] at (d\i.south) {dropped};
   \fi
 }
-\node[capt, anchor=north] at (0.34, -0.53)
+\node[capt, anchor=north] at (0, -0.53)
   {keep the three models with the highest $F1_{cv}$};
 
 % ── Branch ─────────────────────────────────────────────────────────────────
-\draw[edge, line width=0.7pt] (0.34, -0.84) -- (0.34, -1.48);
+\draw[edge, line width=0.7pt] (0, -0.84) -- (0, -1.48);
 \node[major, draw=clrBranch!80!black, fill=clrBranch!20, minimum width=5.6cm]
-  at (0.34, -1.83) {one branch \;=\; three votes};
+  at (0, -1.83) {one branch \;=\; three votes};
 
 \end{tikzpicture}
 \end{document}

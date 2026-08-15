@@ -20,29 +20,23 @@
 % ── Datensatz ──────────────────────────────────────────────────────────────
 \node[rectangle, draw=black!45, fill=black!4, rounded corners=3pt, line width=0.8pt,
       minimum width=7.38cm, minimum height=0.52cm, align=center,
-      font=\fontsize{7}{8.5}\selectfont\bfseries] (ds) at (0, 4.66)
+      font=\fontsize{7}{8.5}\selectfont\bfseries] (ds) at (0, 4.24)
   {dataset\\[-2pt]{\fontsize{5.8}{7}\selectfont\mdseries
    2{,}353 training instances}};
 
 % ── fuenf Folds ────────────────────────────────────────────────────────────
 \foreach \i in {0,...,4}{
-  \draw[fold] ({\i*1.52 - 3.69}, 3.62) rectangle ++(1.30, 0.44);
+  \draw[fold] ({\i*1.52 - 3.69}, 3.20) rectangle ++(1.30, 0.44);
   \node[font=\fontsize{6.5}{8}\selectfont\bfseries]
-    at ({\i*1.52 - 3.04}, 3.84) {f\i};
+    at ({\i*1.52 - 3.04}, 3.42) {f\i};
 }
-\draw[bus] (0, 4.40) -- (0, 4.22);
-\draw[bus] (-3.04, 4.22) -- (3.04, 4.22);
+\draw[bus] (0, 3.98) -- (0, 3.80);
+\draw[bus] (-3.04, 3.80) -- (3.04, 3.80);
 \foreach \i in {0,...,4}{
-  \draw[edge] ({\i*1.52 - 3.04}, 4.22) -- ({\i*1.52 - 3.04}, 4.10);
+  \draw[edge] ({\i*1.52 - 3.04}, 3.80) -- ({\i*1.52 - 3.04}, 3.68);
 }
-\node[capt, anchor=west, align=left] at (\xR, 3.84)
+\node[capt, anchor=west, align=left] at (\xR, 3.42)
   {\textbf{f} $=$ fold\\[1pt]split by channel};
-
-% ── f_i benennt M_i ────────────────────────────────────────────────────────
-\foreach \i in {0,...,4}{
-  \draw[edge, line width=0.7pt]
-    ({\i*1.52 - 3.04}, 3.20) -- ({\i*1.52 - 3.04}, 2.47);
-}
 
 % ── fuenf Fold-Modelle ─────────────────────────────────────────────────────
 \node[hdr, anchor=east] at (-4.37, 2.05) {\textsc{train}};

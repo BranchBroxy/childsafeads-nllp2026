@@ -231,15 +231,17 @@ passes charge.
 | Submission | ST1 | ST2 | ST3 | all 3,360 instances |
 |---|---|---|---|---|
 | **1** | **4.4 s** | **4.4 s** | **4.4 s** | **12.4 GPU-h** |
-| 2 | ~20 s | ~22 s | ~19 s | **≈55–60 GPU-h** ¹ |
+| 2 | **5.4 s** | **5.8 s** | **15.7 s** | **≈25 GPU-h** ¹ |
 | 3 | — | — | — | — |
 | 4 | — | — | — | — |
 | 5 | — | — | — | — |
 
 *Subtask columns are seconds per segment on one A100-80GB; the last column is the whole
-corpus. Inference only. ¹ Submission 2 derived from measured single-pass wall times
-(measurement of the remaining pass types in progress); its nine voters share no backbone
-passes, which is why structural diversity costs roughly five times Submission 1. Decoding dominates — the generative branch costs five times a frozen
+corpus. Inference only. ¹ Measured single-pass wall times on A100 (subtask-specialist decoding runs at a third
+of the generalist's cost: 1.05 s versus 3.0 s per segment, as it emits one subtask's
+labels rather than three). The fact sheet quoted a conservative pre-measurement estimate.
+The nine voters share no backbone passes, which is why structural diversity costs
+roughly twice Submission 1. Decoding dominates — the generative branch costs five times a frozen
 forward on the same backbone, so an operator who wants this cheaper replaces that branch,
 not the large model.*
 

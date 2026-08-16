@@ -187,19 +187,34 @@ nine voters read L1234; the ST1 minority specialist reads the transcript alone.
 
 ### Submission 2
 
-Same three slots, refit over five folds of **train + dev**. Only ST3's generalist differs,
-reading L12.
+A different selection principle, same voting rules: per subtask, the trio with the best
+**mean three-best-fold cross-validation score**, under a diversity constraint — at least
+two backbones, one generative and one head-based branch per trio. The fixed G/S/MCS
+slotting is dropped; what survives selection is mostly specialists.
+
+| | Branch 1 | Branch 2 | Branch 3 |
+|---|---|---|---|
+| **ST1** | Phi-4 · SFT · L1234 | Ministral · head · L1234 ¹ | Ministral · head · L1234 |
+| **ST2** | Ministral · head · L1234 | Phi-4 · head · L1234 | Phi-4 · SFT · L1234 |
+| **ST3** | Phi-4 frozen + LR · L123 | Phi-4 · SFT generalist · L1234 ¹ | ettin-1b frozen + head · L12 |
+
+¹ trained before the full-text refit (truncated inputs) — usable legacy stock.
+
+Trained on the training split alone; the development set was read once afterwards as a
+transfer check. Unlike Submission 1, the nine voters share no backbone passes at
+inference — the diversity that helps the vote is paid for at run time (Section 7).
 
 ### Submissions 3–5
 
-*To be filled as we submit.*
+*To be filled as we submit. Planned: the train+dev refit, and a variant addressing the
+rare ST1 classes.*
 
 ### Results
 
 | # | System | Levels | **test mean** | ST1 | ST2 | ST3 | ST3-family |
 |---|---|---|---|---|---|---|---|
-| 1 | trained on train | 1–4 | *pending* | | | | |
-| 2 | refit on train + dev | 1–4 | *pending* | | | | |
+| 1 | G × S × MCS, trained on train | 1–4 | *pending* | | | | |
+| 2 | top-3-CV pick, diversity rule | 1–4 | *pending* | | | | |
 | 3 | — | | | | | | |
 | 4 | — | | | | | | |
 | 5 | — | | | | | | |

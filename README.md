@@ -194,11 +194,9 @@ slotting is dropped; what survives selection is mostly specialists.
 
 | | Branch 1 | Branch 2 | Branch 3 |
 |---|---|---|---|
-| **ST1** | Phi-4 · SFT · L1234 | Ministral · head · L1234 ¹ | Ministral · head · L1234 |
+| **ST1** | Phi-4 · SFT · L1234 | Ministral · head · L1234 | Ministral · head · L1234 |
 | **ST2** | Ministral · head · L1234 | Phi-4 · head · L1234 | Phi-4 · SFT · L1234 |
-| **ST3** | Phi-4 frozen + LR · L123 | Phi-4 · SFT generalist · L1234 ¹ | ettin-1b frozen + head · L12 |
-
-¹ trained before the full-text refit (truncated inputs) — usable legacy stock.
+| **ST3** | Phi-4 frozen + LR · L123 | Phi-4 · SFT generalist · L1234 | ettin-1b frozen + head · L12 |
 
 Trained on the training split alone; the development set was read once afterwards as a
 transfer check. Unlike Submission 1, the nine voters share no backbone passes at

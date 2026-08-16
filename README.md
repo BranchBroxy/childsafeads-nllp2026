@@ -201,6 +201,7 @@ slotting is dropped; what survives selection is mostly specialists.
 Trained on the training split alone; the development set was read once afterwards as a
 transfer check. Unlike Submission 1, the nine voters share no backbone passes at
 inference — the diversity that helps the vote is paid for at run time (Section 7).
+Submitted on 16 August as team organisation **Nürnberg NLP**.
 
 ### Submissions 3–5
 
@@ -230,13 +231,15 @@ passes charge.
 | Submission | ST1 | ST2 | ST3 | all 3,360 instances |
 |---|---|---|---|---|
 | **1** | **4.4 s** | **4.4 s** | **4.4 s** | **12.4 GPU-h** |
-| 2 | — | — | — | — |
+| 2 | ~20 s | ~22 s | ~19 s | **≈55–60 GPU-h** ¹ |
 | 3 | — | — | — | — |
 | 4 | — | — | — | — |
 | 5 | — | — | — | — |
 
 *Subtask columns are seconds per segment on one A100-80GB; the last column is the whole
-corpus. Inference only. Decoding dominates — the generative branch costs five times a frozen
+corpus. Inference only. ¹ Submission 2 derived from measured single-pass wall times
+(measurement of the remaining pass types in progress); its nine voters share no backbone
+passes, which is why structural diversity costs roughly five times Submission 1. Decoding dominates — the generative branch costs five times a frozen
 forward on the same backbone, so an operator who wants this cheaper replaces that branch,
 not the large model.*
 

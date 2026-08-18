@@ -2,7 +2,7 @@
 
 **Team Nürnberg NLP** · ChildSafeAds Shared Task @ [NLLP](https://nllpw.org/), EMNLP 2026 · Codabench account `broxy`
 
-Nine models vote on every instance. They are picked to be **structurally dissimilar** —
+The core system gives nine fold-models one vote each. They are picked to be **structurally dissimilar** —
 different class scope, different training method, different backbone — on the assumption
 that models built differently fail differently, so a majority over them is more robust than
 any single one.
@@ -25,7 +25,7 @@ No task data here; see [DATA.md](DATA.md) for licence and ethics terms.
 | **[4 · Cross-validation and branches](#4--cross-validation-and-branches)** | five channel-disjoint folds per configuration; the best three become a branch |
 | **[5 · The nine-voter ensemble](#5--the-nine-voter-ensemble)** | three dissimilar branches, plain strict majority, and the taxonomy rules on top |
 | **[6 · Submitted systems](#6--submitted-systems)** | what each submission contains, and the results table |
-| **[7 · What it costs to run](#7--what-it-costs-to-run)** | seconds per segment and GPU-hours per corpus, measured |
+| **[7 · What it costs to run](#7--what-it-costs-to-run)** | seconds per segment and GPU-hours per corpus, measured and reconstructed |
 | **[8 · What each data level buys](#8--what-each-data-level-buys)** | the level ladder read against collection cost |
 | **[9 · Negative results and limits](#9--negative-results-and-limits)** | a truncation bug found by audit, two things that did not work, and what our numbers cannot settle |
 | **[10 · Scope and ethics](#10--scope-and-ethics)** | what this repository deliberately does not contain |
@@ -176,107 +176,111 @@ selection unstable (§9).
 
 ## 6 · Submitted systems
 
-Five evaluation uploads were allowed. We used them as controlled probes: change the branch
-composition, read all three hidden-test scores, and retain the parts that transfer. The
-leaderboard's *Add* action selects one already-scored upload; it does not splice subtasks
-from different runs.
+The evaluation phase allowed five uploads, and all five were used. Submissions 1–3 were
+trained on the official training split; Submission 4 refitted the selected configurations
+on training plus development data. Submission 5 is an exact field-level composition of
+already generated predictions: ST1 and ST3 from Submission 4, ST2 from Submission 3.
 
-### Submission 1
+| # | Codabench ID | Uploaded (2026) | File | Purpose |
+|---|---:|---|---|---|
+| 1 | 890039 | 15 Aug, 14:32 | `ens9v_sub1_TEST.zip` | G × S × MCS baseline |
+| 2 | 890906 | 16 Aug, 13:47 | `ens9v_top3cv_div_TEST.zip` | strongest diverse CV selections |
+| 3 | 891574 | 17 Aug, 10:21 | `ens9v_sub3v2_TEST.zip` | minority-label intervention |
+| 4 | 892825 | 18 Aug, 13:21 | `ens9v_sub4_traindev_TEST.zip` | train+development refit |
+| 5 | 892837 | 18 Aug, 13:31 | `ens9v_bestof_sub5st1_sub3st2_sub5st.zip` | best scored subtask predictions |
+
+### Submission 1 — G × S × MCS baseline
 
 | | **G** | **S** | **MCS** |
 |---|---|---|---|
-| **ST1** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 frozen + LR · **L1** |
-| **ST2** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 frozen + LR · L1234 |
-| **ST3** | Phi-4 · SFT · L1234 | ettin-1b · FT · L1234 | Phi-4 frozen + LR · L1234 |
+| **ST1** | Phi-4 SFT, f2/4/0, L1234 | ettin-1b FT, f2/4/1, L1234 | Phi-4 frozen + LR, f4/3/0, L1 |
+| **ST2** | Phi-4 SFT, f4/2/1, L1234 | ettin-1b FT, f4/1/0, L1234 | Phi-4 frozen + LR, f3/2/1, L1234 |
+| **ST3** | Phi-4 SFT, f0/2/1, L1234 | ettin-1b FT, f4/2/1, L1234 | Phi-4 frozen + LR, f3/2/0, L1234 |
 
-Two backbones carry all 27 fold-models. Trained on the training split alone. Eight of the
-nine voters read L1234; the ST1 minority specialist reads the transcript alone.
+This is the original plain-majority system. Two backbones carry all 27 fold-models; only
+the ST1 minority specialist is restricted to transcript-only input.
 
-### Submission 2
+### Submission 2 — top-CV selections with diversity
 
-A different selection principle, same voting rules: per subtask, the trio with the best
-**mean three-best-fold cross-validation score**, under a diversity constraint — at least
-two backbones, one generative and one head-based branch per trio. The fixed G/S/MCS
-slotting is dropped; what survives selection is mostly specialists.
+Each subtask uses three branches selected by their mean over the strongest CV folds, while
+requiring at least two backbones and both generative and head-based prediction.
 
 | | Branch 1 | Branch 2 | Branch 3 |
 |---|---|---|---|
-| **ST1** | Phi-4 · SFT · L1234 | Ministral · head · L1234 | Ministral · head · L1234 |
-| **ST2** | Ministral · head · L1234 | Phi-4 · head · L1234 | Phi-4 · SFT · L1234 |
-| **ST3** | Phi-4 frozen + LR · L123 | Phi-4 · SFT generalist · L1234 | ettin-1b frozen + head · L12 |
+| **ST1** | Phi-4 SFT-S, f3/4/0 | Ministral head-S capped, f2/3/4 | Ministral head-S full text, f2/3/1 |
+| **ST2** | Ministral head-S, f4/1/3 | Phi-4 head-S, f4/1/2 | Phi-4 SFT-S, f4/1/0 |
+| **ST3** | Phi-4 frozen + LR-S, f1/4/2, L123 | Phi-4 SFT-G, f0/2/1, L1234 | ettin-1b frozen + head-S, f1/2/3, L12 |
 
-Trained on the training split alone; the development set was read once afterwards as a
-transfer check. Unlike Submission 1, the nine voters share no backbone passes at
-inference — the diversity that helps the vote is paid for at run time (Section 7).
-Submitted on 16 August as team organisation **Nürnberg NLP**.
+Unless shown otherwise, branches read L1234. The development set was used only as a
+post-selection transfer check.
 
 ### Submission 3 — minority-label intervention
 
-Submission 3 kept Submission 2's ST2/ST3 bases but tested two targeted interventions. ST2
-added a Phi-4 minority-class head as a conservative per-label cast; ST3 lowered the firing
-threshold from five to four of nine votes. ST1 used a separate G × 2S trio. The ST2 cast
-produced our best ST2 result, but ST1 collapsed despite looking stronger on development —
-the clearest warning against development-set selection in this task.
+ST1 switches to a Phi-4 head-G, Phi-4 SFT-S and Ministral head-S trio. ST2 retains
+Submission 2's nine voters and adds three folds of a Phi-4 MCS head as a conservative
+per-label cast; ST3 retains Submission 2's voters but lowers the firing threshold from
+five to four votes. The intervention gives the best ST2 and ST3-family scores, while its
+development-selected ST1 transfers poorly to the hidden test set.
 
-### Submission 5 — train+development refit
+| | Branch composition | Decision rule |
+|---|---|---|
+| **ST1** | Ministral head-S f3/0/4 · Phi-4 head-G f4/2/3 · Phi-4 SFT-S f3/4/2 | nine-vote majority with rare-label safeguards |
+| **ST2** | Submission 2 core + Phi-4 MCS head f4/1/2 | conservative MCS cast over the nine core votes |
+| **ST3** | Submission 2 core | each label fires at four of nine votes |
 
-After model selection, every configuration was retrained in channel-disjoint five-fold CV
-over the combined training and development pool. No MCS enters this system; each subtask
-uses a G × 2S trio, two backbones, generative SFT and discriminative heads, with the fold
-union covering f0–f4.
+### Submission 4 — train+development refit
+
+Every selected configuration is retrained in channel-disjoint five-fold CV over the
+combined training and development pool. All branches read L1234, use no synthetic
+augmentation, and each subtask's selected fold union covers f0–f4.
 
 | | Branch 1 | Branch 2 | Branch 3 |
 |---|---|---|---|
-| **ST1** | Phi-4 frozen + LR · G | Phi-4 · SFT · S | Ministral · head · S |
-| **ST2** | Ministral · head · G | ettin-1b frozen + head · S | Ministral · SFT · S |
-| **ST3** | Phi-4 · SFT · G | Phi-4 frozen + LR · S | ettin-1b frozen + head · S |
+| **ST1** | Phi-4 frozen + LR-G, f0/2/4 | Phi-4 SFT-S, f1/2/4 | Ministral head-S, f2/3/4 |
+| **ST2** | Ministral head-G, f0/2/4 | ettin-1b frozen + head-S, f0/1/4 | Ministral SFT-S, f0/1/3 |
+| **ST3** | Phi-4 SFT-G, f1/2/4 | Phi-4 frozen + LR-S, f0/1/2 | ettin-1b frozen + head-S, f1/3/4 |
 
-All branches read L1234 and use no synthetic augmentation. The refit improves our ST1 and
-ST3 test scores, but loses substantially on ST2: more labelled training data is not a
-uniform win when the selected architecture changes with it.
+The refit produces the strongest ST1 and ST3 predictions, but loses substantially on ST2.
+
+### Submission 5 — best-of scored subtasks
+
+Submission 5 combines Submission 4's ST1, Submission 3's ST2 and Submission 4's ST3
+predictions without changing a single label inside those fields. This composition was
+uploaded and scored as one valid system; it is not a hypothetical post-evaluation result.
 
 ### Results
 
 | # | System | Levels | **test mean** | ST1 | ST2 | ST3 | ST3-family |
-|---|---|---|---|---|---|---|---|
-| 1 | G × S × MCS, trained on train | 1–4 | .6644 | .5944 | .8034 | .5954 | .6958 |
-| **2** | **top-3-CV pick, diversity rule** | **1–4** | **.6974** | .6205 | .8204 | .6512 | .7259 |
+|---|---|---|---:|---:|---:|---:|---:|
+| 1 | G × S × MCS baseline | 1–4 | .6644 | .5944 | .8034 | .5954 | .6958 |
+| 2 | top-CV selections, diversity rule | 1–4 | .6974 | .6205 | .8204 | .6512 | .7259 |
 | 3 | minority-label intervention | 1–4 | .6688 | .5339 | **.8243** | .6483 | **.7281** |
-| 5 | train+development refit, G × 2S | 1–4 | .6904 | **.6464** | .7719 | **.6530** | .7031 |
+| 4 | train+development refit, G × 2S | 1–4 | .6904 | **.6464** | .7719 | **.6530** | .7031 |
+| **5** | **best-of: Sub4-ST1 + Sub3-ST2 + Sub4-ST3** | **1–4** | **.7079** | **.6464** | **.8243** | **.6530** | .7031 |
 
-Submission 2 is the strongest complete scored system. Submission 5 raises ST1 by .0259 and
-ST3 by .0018 over it, but loses .0485 on ST2. A post-evaluation splice of Sub5-ST1,
-Sub3-ST2 and Sub5-ST3 would score exactly **(.6464 + .8243 + .6530) / 3 = .7079**; it was
-not uploaded and is therefore **not an official result**. We report it only as a diagnostic
-of where each design transferred. Only runs whose exact local artifacts and metadata have
-been reconciled are included in the table.
-
-Branches were chosen on cross-validation; development was used as a transfer check in the
-train-only wave and became part of the labelled CV pool only for the final refit.
+The official mean is the arithmetic mean of ST1, ST2 and ST3; ST3-family is reported for
+diagnosis but does not enter it. Submission 5 therefore scores
+**(.6464 + .8243 + .6530) / 3 = .7079**. Its ST3-family value follows Submission 4 because
+both ST3 fields are identical.
 
 ---
 
 ## 7 · What it costs to run
 
-What **one segment** costs. Each subtask runs nine voters, so its cost is what those nine
-passes charge.
+The figures are inference-only A100-80GB equivalents. Submission 1 is measured end to end;
+the remaining rows are reconstructed from measured A100 single-pass wall times and the
+exact selected folds. The additional Ministral-SFT rate needed for Submissions 4 and 5 was
+checked against the completed cluster banking logs (about 0.52 s per instance and fold).
+Model loading and reusable frozen representations are included where the deployed branch
+permits reuse; no paid API is used.
 
-| Submission | ST1 | ST2 | ST3 | all 3,360 instances |
-|---|---|---|---|---|
-| **1** | **4.4 s** | **4.4 s** | **4.4 s** | **12.4 GPU-h** |
-| 2 | **5.4 s** | **5.8 s** | **9.6 s** | **≈19 GPU-h** ¹ |
-| 3 | — | — | — | **≈20 GPU-h** ² |
-| 5 | — | — | — | **≈20–22 GPU-h** ² |
-
-*Subtask columns are seconds per segment on one A100-80GB; the last column is the whole
-corpus. Inference only. ¹ Measured single-pass wall times on A100. Generalist and specialist decode one
-subtask at the same ~1.0 s per segment; a generalist banking run covers all three
-subtasks and therefore measures at 3.0 s, but deployment only asks it for one. The
-fact sheet quoted a conservative pre-measurement estimate. The nine voters share no
-backbone passes, which is why structural diversity still costs more than Submission 1. Decoding dominates — the generative branch costs five times a frozen
-forward on the same backbone, so an operator who wants this cheaper replaces that branch,
-not the large model. ² Estimate from those measured component times; shared frozen
-representations are reused where the branch composition permits it.*
+| Submission | ST1 (s/segment) | ST2 (s/segment) | ST3 (s/segment) | Total (s/segment) | All 3,360 instances |
+|---|---:|---:|---:|---:|---:|
+| **1** | 4.4 | 4.4 | 4.4 | 13.3 | **12.4 GPU-h** |
+| **2** | 5.4 | 5.8 | 9.6 | 20.8 | **≈19.4 GPU-h** |
+| **3** | 5.8 | 7.3 | 9.6 | 22.7 | **≈21.2 GPU-h** |
+| **4** | 10.3 | 3.2 | 9.6 | 23.1 | **≈21.6 GPU-h** |
+| **5** | 10.3 | 7.3 | 9.6 | 27.2 | **≈25.4 GPU-h** |
 
 ---
 

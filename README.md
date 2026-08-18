@@ -115,7 +115,11 @@ A configuration's name states the three axes plus the data it may read:
 ```
 
 `G` needs no subtask; `S` and `MCS` name theirs. `L1234` is everything, `L1` the transcript
-alone. The axis labels in the grid above read the same way.
+alone. Operational suffixes record the training regime: `ft` disables the earlier text
+cap, `noaug` means no synthetic augmentation, and `_dev` marks the final refit on the
+combined training and development pool. Fold choices are not part of the configuration
+name and are written separately as, for example, `folds f2/f4/f0`. The axis labels in the
+grid above read the same way.
 
 ---
 
@@ -181,21 +185,13 @@ trained on the official training split; Submission 4 refitted the selected confi
 on training plus development data. Submission 5 is an exact field-level composition of
 already generated predictions: ST1 and ST3 from Submission 4, ST2 from Submission 3.
 
-| # | Codabench ID | Uploaded (2026) | File | Purpose |
-|---|---:|---|---|---|
-| 1 | 890039 | 15 Aug, 14:32 | `ens9v_sub1_TEST.zip` | G × S × MCS baseline |
-| 2 | 890906 | 16 Aug, 13:47 | `ens9v_top3cv_div_TEST.zip` | strongest diverse CV selections |
-| 3 | 891574 | 17 Aug, 10:21 | `ens9v_sub3v2_TEST.zip` | minority-label intervention |
-| 4 | 892825 | 18 Aug, 13:21 | `ens9v_sub4_traindev_TEST.zip` | train+development refit |
-| 5 | 892837 | 18 Aug, 13:31 | `ens9v_bestof_sub5st1_sub3st2_sub5st.zip` | best scored subtask predictions |
-
 ### Submission 1 — G × S × MCS baseline
 
 | | **G** | **S** | **MCS** |
 |---|---|---|---|
-| **ST1** | Phi-4 SFT, f2/4/0, L1234 | ettin-1b FT, f2/4/1, L1234 | Phi-4 frozen + LR, f4/3/0, L1 |
-| **ST2** | Phi-4 SFT, f4/2/1, L1234 | ettin-1b FT, f4/1/0, L1234 | Phi-4 frozen + LR, f3/2/1, L1234 |
-| **ST3** | Phi-4 SFT, f0/2/1, L1234 | ettin-1b FT, f4/2/1, L1234 | Phi-4 frozen + LR, f3/2/0, L1234 |
+| **ST1** | `phi4-SFT-G-L1234-noaug`<br>folds f2/f4/f0 | `ett1b-FT-S-st1-L1234-noaug`<br>folds f2/f4/f1 | `phi4-SFTf-LR-MCS-st1-L1-ft-noaug`<br>folds f4/f3/f0 |
+| **ST2** | `phi4-SFT-G-L1234-noaug`<br>folds f4/f2/f1 | `ett1b-FT-S-st2-L1234-noaug`<br>folds f4/f1/f0 | `phi4-SFTf-LR-MCS-st2-L1234-ft-noaug`<br>folds f3/f2/f1 |
+| **ST3** | `phi4-SFT-G-L1234-noaug`<br>folds f0/f2/f1 | `ett1b-FT-S-st3-L1234-noaug`<br>folds f4/f2/f1 | `phi4-SFTf-LR-MCS-st3-L1234-ft-noaug`<br>folds f3/f2/f0 |
 
 This is the original plain-majority system. Two backbones carry all 27 fold-models; only
 the ST1 minority specialist is restricted to transcript-only input.
@@ -207,9 +203,9 @@ requiring at least two backbones and both generative and head-based prediction.
 
 | | Branch 1 | Branch 2 | Branch 3 |
 |---|---|---|---|
-| **ST1** | Phi-4 SFT-S, f3/4/0 | Ministral head-S capped, f2/3/4 | Ministral head-S full text, f2/3/1 |
-| **ST2** | Ministral head-S, f4/1/3 | Phi-4 head-S, f4/1/2 | Phi-4 SFT-S, f4/1/0 |
-| **ST3** | Phi-4 frozen + LR-S, f1/4/2, L123 | Phi-4 SFT-G, f0/2/1, L1234 | ettin-1b frozen + head-S, f1/2/3, L12 |
+| **ST1** | `phi4-SFT-S-st1-L1234-ft-noaug`<br>folds f3/f4/f0 | `min-ClsHead-S-st1-L1234-noaug`<br>folds f2/f3/f4 | `min-ClsHead-S-st1-L1234-ft-noaug`<br>folds f2/f3/f1 |
+| **ST2** | `min-ClsHead-S-st2-L1234-ft-noaug`<br>folds f4/f1/f3 | `phi4-ClsHead-S-st2-L1234-ft-noaug`<br>folds f4/f1/f2 | `phi4-SFT-S-st2-L1234-ft-noaug`<br>folds f4/f1/f0 |
+| **ST3** | `phi4-SFTf-LR-S-st3-L123-ft-noaug`<br>folds f1/f4/f2 | `phi4-SFT-G-L1234-noaug`<br>folds f0/f2/f1 | `ett1b-FTf-ClsHead-S-st3-L12-noaug`<br>folds f1/f2/f3 |
 
 Unless shown otherwise, branches read L1234. The development set was used only as a
 post-selection transfer check.
@@ -224,8 +220,8 @@ development-selected ST1 transfers poorly to the hidden test set.
 
 | | Branch composition | Decision rule |
 |---|---|---|
-| **ST1** | Ministral head-S f3/0/4 · Phi-4 head-G f4/2/3 · Phi-4 SFT-S f3/4/2 | nine-vote majority with rare-label safeguards |
-| **ST2** | Submission 2 core + Phi-4 MCS head f4/1/2 | conservative MCS cast over the nine core votes |
+| **ST1** | `min-ClsHead-S-st1-L12` (f3/f0/f4)<br>`phi4-ClsHead-G-L1234-noaug` (f4/f2/f3)<br>`phi4-SFT-S-st1-L1234-ft-noaug` (f3/f4/f2) | nine-vote majority with rare-label safeguards |
+| **ST2** | Submission 2 core + `phi4-ClsHead-MCS-st2-L1234-ft-noaug` (f4/f1/f2) | conservative MCS cast over the nine core votes |
 | **ST3** | Submission 2 core | each label fires at four of nine votes |
 
 ### Submission 4 — train+development refit
@@ -236,9 +232,9 @@ augmentation, and each subtask's selected fold union covers f0–f4.
 
 | | Branch 1 | Branch 2 | Branch 3 |
 |---|---|---|---|
-| **ST1** | Phi-4 frozen + LR-G, f0/2/4 | Phi-4 SFT-S, f1/2/4 | Ministral head-S, f2/3/4 |
-| **ST2** | Ministral head-G, f0/2/4 | ettin-1b frozen + head-S, f0/1/4 | Ministral SFT-S, f0/1/3 |
-| **ST3** | Phi-4 SFT-G, f1/2/4 | Phi-4 frozen + LR-S, f0/1/2 | ettin-1b frozen + head-S, f1/3/4 |
+| **ST1** | `phi4-SFTf-LR-G-L1234-ft-noaug_dev`<br>folds f0/f2/f4 | `phi4-SFT-S-st1-L1234-ft-noaug_dev`<br>folds f1/f2/f4 | `min-ClsHead-S-st1-L1234-ft-noaug_dev`<br>folds f2/f3/f4 |
+| **ST2** | `min-ClsHead-G-L1234-ft-noaug_dev`<br>folds f0/f2/f4 | `ett1b-FTf-ClsHead-S-st2-L1234-noaug_dev`<br>folds f0/f1/f4 | `min-SFT-S-st2-L1234-ft-noaug_dev`<br>folds f0/f1/f3 |
+| **ST3** | `phi4-SFT-G-L1234-ft-noaug_dev`<br>folds f1/f2/f4 | `phi4-SFTf-LR-S-st3-L1234-ft-noaug_dev`<br>folds f0/f1/f2 | `ett1b-FTf-ClsHead-S-st3-L1234-noaug_dev`<br>folds f1/f3/f4 |
 
 The refit produces the strongest ST1 and ST3 predictions, but loses substantially on ST2.
 
@@ -269,18 +265,20 @@ both ST3 fields are identical.
 
 The figures are inference-only A100-80GB equivalents. Submission 1 is measured end to end;
 the remaining rows are reconstructed from measured A100 single-pass wall times and the
-exact selected folds. The additional Ministral-SFT rate needed for Submissions 4 and 5 was
-checked against the completed cluster banking logs (about 0.52 s per instance and fold).
-Model loading and reusable frozen representations are included where the deployed branch
-permits reuse; no paid API is used.
+exact selected folds. The completed full-text cache logs give about 2.02 s for a frozen
+Phi-4 pass, 0.25 s for a frozen ettin-1b pass and 0.52 s for a Ministral-SFT pass. The
+input prompt is subtask-specific, so frozen representations cannot be reused across
+subtasks; only model loading is amortised over the corpus. The submitted fact sheets'
+20 GPU-h and 20–22 GPU-h estimates for Submissions 4 and 5 were therefore low. No paid API
+is used.
 
 | Submission | ST1 (s/segment) | ST2 (s/segment) | ST3 (s/segment) | Total (s/segment) | All 3,360 instances |
 |---|---:|---:|---:|---:|---:|
 | **1** | 4.4 | 4.4 | 4.4 | 13.3 | **12.4 GPU-h** |
 | **2** | 5.4 | 5.8 | 9.6 | 20.8 | **≈19.4 GPU-h** |
 | **3** | 5.8 | 7.3 | 9.6 | 22.7 | **≈21.2 GPU-h** |
-| **4** | 10.3 | 3.2 | 9.6 | 23.1 | **≈21.6 GPU-h** |
-| **5** | 10.3 | 7.3 | 9.6 | 27.2 | **≈25.4 GPU-h** |
+| **4** | 10.3 | 3.5 | 10.0 | 23.8 | **≈22.2 GPU-h** |
+| **5** | 10.3 | 7.3 | 10.0 | 27.6 | **≈25.8 GPU-h** |
 
 ---
 

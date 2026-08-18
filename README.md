@@ -127,10 +127,11 @@ disclosure habits, so a random split leaks all of it. Run *i* trains on the four
 than **f**$_i$ and is scored on **f**$_i$, giving model **M**$_i$.
 
 A **voter** is one such fold-model; its score on its own held-out fold is its $F1_{cv}$.
-Ranking the five by $F1_{cv}$ and keeping the **top three** does two things: their mean
-becomes the configuration's selection signal, and those three fold-models are what gets
-deployed. The weaker two would add correlated noise, not an independent opinion. The three
-together are a **branch**, and a branch casts three votes.
+The mean of the **three best folds** is the configuration's selection signal. Deployment
+keeps the strongest two and then the best available third fold subject to one ensemble-level
+constraint: the three branches together must cover **f0–f4**. This costs very little score,
+prevents a whole data slice from disappearing from the ensemble, and leaves three
+fold-models per configuration. Those three form a **branch** and cast three votes.
 
 <p align="center"><img src="figures/fig-cv5.svg" width="100%"
   alt="Cross-validation: five fold-models per configuration, each trained on four folds and
@@ -145,9 +146,12 @@ agree too often to arbitrate anything. The vote works because the three branches
 **structurally dissimilar**: different class scope (§1), in practice also different method
 and backbone (§2), so their mistakes differ.
 
-An **ensemble** is three branches — one **G**, one **S**, one **MCS** — nine voters,
-deciding by **plain strict majority**: a label fires when more than half the votes cast
-carry it.
+An **ensemble** is three branches and nine voters, deciding by **plain strict majority**:
+a label fires when more than half the votes cast carry it. G × S × MCS was the initial
+design, but the evaluation systems treat scope as a diversity axis rather than a fixed
+template: a trio may instead be G × 2S or 2G × S when full-label branches rank more
+reliably. Every selected trio spans at least two backbones and both generative and
+head-based adaptation.
 
 <p align="center"><img src="figures/fig-ensemble.svg" width="100%"
   alt="Nine-voter ensemble: three branches of three voters each, decided by plain strict majority"></p>
@@ -155,24 +159,27 @@ carry it.
 **Fold coverage.** The three fold sets together cover all five folds, so no slice of the
 training data goes unused.
 
-**Voting rules.** ST1 breaks ties toward the majority class and never predicts `other`
-(0.07 % of the corpus — under a macro-F1 averaging over *occurring* labels, an absent class
-costs twice). ST2 is never empty. ST3 enforces the taxonomy: `no_flag` and
+**Voting rules.** ST1 breaks ties toward the majority class; the main systems also suppressed
+`other` because it forms only 0.07 % of the labelled corpus, a decision the hidden test later
+showed to be unsafe (§9). ST2 is never empty. ST3 enforces the taxonomy: `no_flag` and
 `insufficient_context` are exclusive against any real flag, and `undisclosed_advertising` /
 `inadequate_disclosure` are mutually exclusive. The official checker tests neither of the
 last two; ours does.
 
-**Why an MCS cannot do harm.** It holds three of nine votes and never predicts the majority
-labels. While G and S agree on one they already have six votes and win; the MCS moves the
-decision only once they split — the uncertain cases. The gate is emergent, no threshold
-needed.
+**How an MCS is bounded.** It holds three of nine votes and never predicts the majority
+labels. While two full-label branches agree they already have six votes and the MCS cannot
+overrule them; it can only arbitrate their disagreements. That structural bound does not
+guarantee a gain: ST2 benefited slightly, while ST1's tiny minority validation set made MCS
+selection unstable (§9).
 
 ---
 
 ## 6 · Submitted systems
 
-Five submissions are allowed. Each fills the same three slots per subtask — one **G**, one
-**S**, one **MCS** — and which model or method fills which slot is free.
+Five evaluation uploads were allowed. We used them as controlled probes: change the branch
+composition, read all three hidden-test scores, and retain the parts that transfer. The
+leaderboard's *Add* action selects one already-scored upload; it does not splice subtasks
+from different runs.
 
 ### Submission 1
 
@@ -203,23 +210,49 @@ transfer check. Unlike Submission 1, the nine voters share no backbone passes at
 inference — the diversity that helps the vote is paid for at run time (Section 7).
 Submitted on 16 August as team organisation **Nürnberg NLP**.
 
-### Submissions 3–5
+### Submission 3 — minority-label intervention
 
-*To be filled as we submit. Planned: the train+dev refit, and a variant addressing the
-rare ST1 classes.*
+Submission 3 kept Submission 2's ST2/ST3 bases but tested two targeted interventions. ST2
+added a Phi-4 minority-class head as a conservative per-label cast; ST3 lowered the firing
+threshold from five to four of nine votes. ST1 used a separate G × 2S trio. The ST2 cast
+produced our best ST2 result, but ST1 collapsed despite looking stronger on development —
+the clearest warning against development-set selection in this task.
+
+### Submission 5 — train+development refit
+
+After model selection, every configuration was retrained in channel-disjoint five-fold CV
+over the combined training and development pool. No MCS enters this system; each subtask
+uses a G × 2S trio, two backbones, generative SFT and discriminative heads, with the fold
+union covering f0–f4.
+
+| | Branch 1 | Branch 2 | Branch 3 |
+|---|---|---|---|
+| **ST1** | Phi-4 frozen + LR · G | Phi-4 · SFT · S | Ministral · head · S |
+| **ST2** | Ministral · head · G | ettin-1b frozen + head · S | Ministral · SFT · S |
+| **ST3** | Phi-4 · SFT · G | Phi-4 frozen + LR · S | ettin-1b frozen + head · S |
+
+All branches read L1234 and use no synthetic augmentation. The refit improves our ST1 and
+ST3 test scores, but loses substantially on ST2: more labelled training data is not a
+uniform win when the selected architecture changes with it.
 
 ### Results
 
 | # | System | Levels | **test mean** | ST1 | ST2 | ST3 | ST3-family |
 |---|---|---|---|---|---|---|---|
-| 1 | G × S × MCS, trained on train | 1–4 | *pending* | | | | |
-| 2 | top-3-CV pick, diversity rule | 1–4 | *pending* | | | | |
-| 3 | — | | | | | | |
-| 4 | — | | | | | | |
-| 5 | — | | | | | | |
+| 1 | G × S × MCS, trained on train | 1–4 | .6644 | .5944 | .8034 | .5954 | .6958 |
+| **2** | **top-3-CV pick, diversity rule** | **1–4** | **.6974** | .6205 | .8204 | .6512 | .7259 |
+| 3 | minority-label intervention | 1–4 | .6688 | .5339 | **.8243** | .6483 | **.7281** |
+| 5 | train+development refit, G × 2S | 1–4 | .6904 | **.6464** | .7719 | **.6530** | .7031 |
 
-Branches are chosen on cross-validation only; the development set is read once afterwards as
-a transfer check, never as a selection criterion. Submission 1 reaches **0.7683** there.
+Submission 2 is the strongest complete scored system. Submission 5 raises ST1 by .0259 and
+ST3 by .0018 over it, but loses .0485 on ST2. A post-evaluation splice of Sub5-ST1,
+Sub3-ST2 and Sub5-ST3 would score exactly **(.6464 + .8243 + .6530) / 3 = .7079**; it was
+not uploaded and is therefore **not an official result**. We report it only as a diagnostic
+of where each design transferred. Only runs whose exact local artifacts and metadata have
+been reconciled are included in the table.
+
+Branches were chosen on cross-validation; development was used as a transfer check in the
+train-only wave and became part of the labelled CV pool only for the final refit.
 
 ---
 
@@ -232,9 +265,8 @@ passes charge.
 |---|---|---|---|---|
 | **1** | **4.4 s** | **4.4 s** | **4.4 s** | **12.4 GPU-h** |
 | 2 | **5.4 s** | **5.8 s** | **9.6 s** | **≈19 GPU-h** ¹ |
-| 3 | — | — | — | — |
-| 4 | — | — | — | — |
-| 5 | — | — | — | — |
+| 3 | — | — | — | **≈20 GPU-h** ² |
+| 5 | — | — | — | **≈20–22 GPU-h** ² |
 
 *Subtask columns are seconds per segment on one A100-80GB; the last column is the whole
 corpus. Inference only. ¹ Measured single-pass wall times on A100. Generalist and specialist decode one
@@ -243,7 +275,8 @@ subtasks and therefore measures at 3.0 s, but deployment only asks it for one. T
 fact sheet quoted a conservative pre-measurement estimate. The nine voters share no
 backbone passes, which is why structural diversity still costs more than Submission 1. Decoding dominates — the generative branch costs five times a frozen
 forward on the same backbone, so an operator who wants this cheaper replaces that branch,
-not the large model.*
+not the large model. ² Estimate from those measured component times; shared frozen
+representations are reused where the branch composition permits it.*
 
 ---
 
@@ -289,6 +322,13 @@ exact gaps are not settled. Re-running it is the first thing we will add here.*
 - **Data augmentation did nothing.** Paired over 68 recipes: +0.007, inside noise. Dropped.
 - **Prompting has a ceiling well below training.** OPRO reached ST2 0.59 against 0.89, ST3
   0.53 against 0.67.
+- **More labelled data did not improve every subtask.** The train+development refit raised
+  test ST1 from .6205 to .6464 and ST3 from .6512 to .6530, but ST2 fell from .8204 to
+  .7719. Refit quality and ensemble composition cannot be treated as separable choices.
+- **Suppressing `other` was not safe on ST1.** It occurs in only 2 of 2,857 labelled
+  training-plus-development instances, but the hidden test metric contained the class.
+  Predicting it zero times fixes one of five macro-F1 terms at zero; post-hoc overrides were
+  too brittle to solve the problem reliably.
 
 What our numbers cannot settle:
 
@@ -297,7 +337,8 @@ What our numbers cannot settle:
   below roughly 0.03 there are noise, which is why we never select on it.
 - **An MCS on ST1 rests on few points.** After the majority classes are removed only about
   31 validation instances per fold remain, so its ranking is unstable even where its score
-  looks high.
+  looks high. Submission 3 confirmed the transfer failure: stronger development performance
+  became our weakest test ST1.
 
 ---
 
